@@ -35,6 +35,12 @@ export default defineConfig({
          * aria-query (via @testing-library/dom) is CommonJS with no ESM entry,
          * so browser mode cannot resolve its named exports natively. Forcing it
          * through the dep optimizer makes Vite synthesise them.
+         *
+         * react-hook-form is here for a different reason: it is imported only
+         * by the form stories, so Vite discovers it mid-run, re-optimizes, and
+         * reloads the page underneath the test — 'Failed to fetch dynamically
+         * imported module', once, on a cold cache. Pre-declaring it keeps CI
+         * from failing on a run that passes locally against a warm cache.
          */
         optimizeDeps: {
           include: [
@@ -42,6 +48,7 @@ export default defineConfig({
             'lz-string',
             'dom-accessibility-api',
             'pretty-format',
+            'react-hook-form',
             '@testing-library/dom',
             '@testing-library/user-event',
           ],

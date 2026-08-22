@@ -50,17 +50,19 @@ const COLOR_GROUPS = [
   {
     title: 'Status',
     description:
-      '`warning-soft` and `error-foreground` are drawn on the page background rather than on their solid counterpart, so they carry their own contrast.',
+      'The `-soft` variants are drawn as text on the page background rather than on their solid counterpart, so they carry their own contrast and are lightened in dark.',
     tokens: [
       'destructive',
       'destructive-foreground',
       'success',
       'success-foreground',
+      'success-soft',
       'warning',
       'warning-foreground',
       'warning-soft',
       'info',
       'info-foreground',
+      'info-soft',
       'error-foreground',
     ],
   },
