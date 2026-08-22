@@ -8,7 +8,7 @@ import path from 'node:path';
  *
  * `preserveModules` keeps one output file per source module so consuming apps
  * can tree-shake unused primitives instead of pulling the whole kit. Every
- * peer dependency is externalised — bundling React, Radix, react-hook-form or
+ * peer dependency is externalised — bundling React, Base UI, react-hook-form or
  * sonner would give the app a second copy and silently break their context
  * (a `toast()` in the app would not reach a `<Toaster />` from the kit).
  */
@@ -40,8 +40,6 @@ export default defineConfig({
         /^react-dom$/,
         /^react-dom\//,
         /^react-hook-form$/,
-        /^radix-ui$/,
-        /^radix-ui\//,
         /^@base-ui\/react/,
         /^lucide-react$/,
         /^sonner$/,

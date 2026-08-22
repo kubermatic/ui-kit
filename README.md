@@ -3,7 +3,7 @@
 Shared React component primitives and design tokens for Kubermatic dashboards.
 
 33 primitives (button, dialog, table, form controls, sidebar, …) built on
-Radix, Base UI and Tailwind 4, plus the OKLch light/dark token set they render
+Base UI and Tailwind 4, plus the OKLch light/dark token set they render
 against. Storybook is the workbench.
 
 ---
@@ -32,7 +32,7 @@ bundled one — a second copy of `react`, `react-hook-form` or `sonner` silently
 breaks context across the boundary (a `toast()` in the app would never reach a
 `<Toaster />` from the kit).
 
-`react` · `react-dom` · `react-hook-form` · `radix-ui` · `@base-ui/react` ·
+`react` · `react-dom` · `react-hook-form` · `@base-ui/react` ·
 `lucide-react` · `sonner` · `next-themes` (optional) · `tailwindcss`
 
 Only `clsx`, `class-variance-authority` and `tailwind-merge` are bundled.
@@ -84,7 +84,7 @@ at runtime. Dedupe in both `vite.config.ts` and `vitest.config.ts`:
 ```ts
 resolve: {
   dedupe: [
-    'react', 'react-dom', 'react-hook-form', 'radix-ui',
+    'react', 'react-dom', 'react-hook-form',
     '@base-ui/react', 'lucide-react', 'sonner', 'next-themes',
   ],
 }

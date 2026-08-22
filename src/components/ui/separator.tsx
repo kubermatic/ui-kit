@@ -1,7 +1,6 @@
 'use client';
 
-import * as React from 'react';
-import { Separator as SeparatorPrimitive } from 'radix-ui';
+import { Separator as SeparatorPrimitive } from '@base-ui/react';
 
 import { cn } from '@/lib/utils';
 
@@ -10,12 +9,18 @@ function Separator({
   orientation = 'horizontal',
   decorative = true,
   ...props
-}: React.ComponentProps<typeof SeparatorPrimitive.Root>) {
+}: SeparatorPrimitive.Props & {
+  /**
+   * When true the separator is presentational only and hidden from the
+   * accessibility tree. Mirrors the ARIA `separator` / `none` role split.
+   */
+  decorative?: boolean;
+}) {
   return (
-    <SeparatorPrimitive.Root
+    <SeparatorPrimitive
       data-slot="separator"
-      decorative={decorative}
       orientation={orientation}
+      {...(decorative ? { role: 'none', 'aria-orientation': undefined } : {})}
       className={cn(
         'bg-border shrink-0 data-[orientation=horizontal]:h-px data-[orientation=horizontal]:w-full data-[orientation=vertical]:h-full data-[orientation=vertical]:w-px',
         className,
