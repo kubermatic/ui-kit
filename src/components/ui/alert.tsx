@@ -10,9 +10,9 @@ const alertVariants = cva(
         default: 'bg-card text-card-foreground [&>svg]:text-foreground',
         error:
           'border-destructive/30 bg-destructive/10 text-error-foreground [&>svg]:text-error-foreground',
-        info: 'border-info/30 bg-info/10 text-info dark:text-[oklch(0.75_0.16_255)] [&>svg]:text-info dark:[&>svg]:text-[oklch(0.75_0.16_255)]',
+        info: 'border-info/30 bg-info/10 text-info-soft [&>svg]:text-info-soft',
         success:
-          'border-success/30 bg-success/10 text-success dark:text-[oklch(0.75_0.16_149)] [&>svg]:text-success dark:[&>svg]:text-[oklch(0.75_0.16_149)]',
+          'border-success/30 bg-success/10 text-success-soft [&>svg]:text-success-soft',
         warning:
           'border-warning/30 bg-warning/10 text-warning-soft [&>svg]:text-warning-soft',
       },
@@ -77,4 +77,4 @@ function AlertDescription({
   );
 }
 
-export { Alert, AlertTitle, AlertDescription };
+export { Alert, AlertTitle, AlertDescription, alertVariants };

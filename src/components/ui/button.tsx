@@ -17,10 +17,18 @@ const buttonVariants = cva(
           'bg-secondary text-secondary-foreground hover:bg-secondary/80',
         ghost:
           'hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50',
+        /*
+         * Text uses --error-foreground, not --destructive. --destructive is a
+         * *fill* — it is tuned to carry white text on top of it, and as text on
+         * the page background it measures 4.47:1 in light and 3.63:1 in dark,
+         * both under WCAG AA. --error-foreground is the token for destructive
+         * text on a page surface (9.37:1 / 9.86:1), which is what the error
+         * Alert already uses. The border and hover fill stay --destructive.
+         */
         ghostDestructive:
-          'text-destructive hover:bg-destructive/10 hover:text-destructive dark:hover:bg-destructive/20',
+          'text-error-foreground hover:bg-destructive/10 hover:text-error-foreground dark:hover:bg-destructive/20',
         outlineDestructive:
-          'border border-destructive/50 text-destructive shadow-xs hover:bg-destructive/10 dark:border-destructive/50 dark:hover:bg-destructive/20',
+          'border border-destructive/50 text-error-foreground shadow-xs hover:bg-destructive/10 dark:border-destructive/50 dark:hover:bg-destructive/20',
         link: 'text-primary underline-offset-4 hover:underline',
       },
       size: {
