@@ -71,9 +71,16 @@ function PopoverHeader({ className, ...props }: React.ComponentProps<'div'>) {
   );
 }
 
-function PopoverTitle({ className, ...props }: React.ComponentProps<'h2'>) {
+/**
+ * Base UI's own `Title`, not a styled `div`.
+ *
+ * The popup carries `role="dialog"`, which requires an accessible name. Base UI
+ * derives that by pointing the popup's `aria-labelledby` at this part — a plain
+ * `div` renders identically and leaves the dialog anonymous to a screen reader.
+ */
+function PopoverTitle({ className, ...props }: PopoverPrimitive.Title.Props) {
   return (
-    <div
+    <PopoverPrimitive.Title
       data-slot="popover-title"
       className={cn('font-medium', className)}
       {...props}
@@ -81,12 +88,13 @@ function PopoverTitle({ className, ...props }: React.ComponentProps<'h2'>) {
   );
 }
 
+/** Wires the popup's `aria-describedby`, for the same reason as `PopoverTitle`. */
 function PopoverDescription({
   className,
   ...props
-}: React.ComponentProps<'p'>) {
+}: PopoverPrimitive.Description.Props) {
   return (
-    <p
+    <PopoverPrimitive.Description
       data-slot="popover-description"
       className={cn('text-muted-foreground', className)}
       {...props}

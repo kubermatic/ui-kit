@@ -41,6 +41,8 @@ function ComboboxClear({ className, ...props }: ComboboxPrimitive.Clear.Props) {
   return (
     <ComboboxPrimitive.Clear
       data-slot="combobox-clear"
+      // Icon-only control: the X is not an accessible name.
+      aria-label="Clear selection"
       render={<InputGroupButton variant="ghost" size="icon-xs" />}
       className={cn(className)}
       {...props}
@@ -72,6 +74,8 @@ function ComboboxInput({
           <InputGroupButton
             size="icon-xs"
             variant="ghost"
+            // Renders only a chevron, so it needs a name of its own.
+            aria-label="Show options"
             render={<ComboboxTrigger />}
             data-slot="input-group-button"
             className="group-has-data-[slot=combobox-clear]/input-group:hidden data-pressed:bg-transparent"
@@ -248,6 +252,13 @@ function ComboboxChip({
 }: ComboboxPrimitive.Chip.Props & {
   showRemove?: boolean;
 }) {
+  /*
+   * "Remove web-frontend-01" rather than a bare "Remove": a chip list produces
+   * one of these per selection, and a row of identically-named buttons tells a
+   * screen-reader user which control they are on but not what it does.
+   */
+  const label = typeof children === 'string' ? `Remove ${children}` : 'Remove';
+
   return (
     <ComboboxPrimitive.Chip
       data-slot="combobox-chip"
@@ -260,6 +271,7 @@ function ComboboxChip({
       {children}
       {showRemove && (
         <ComboboxPrimitive.ChipRemove
+          aria-label={label}
           render={<Button variant="ghost" size="icon-xs" />}
           className="-ml-1 opacity-50 hover:opacity-100"
           data-slot="combobox-chip-remove"

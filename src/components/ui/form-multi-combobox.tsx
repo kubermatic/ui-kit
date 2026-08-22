@@ -55,6 +55,13 @@ export function FormMultiCombobox({
               <ComboboxChip key={v}>{v}</ComboboxChip>
             ))}
             <ComboboxChipsInput
+              /*
+               * The placeholder is hidden once chips exist, so it cannot be the
+               * input's accessible name in the state the field spends most of
+               * its life in. Naming it unconditionally keeps the control
+               * announced whether or not anything is selected.
+               */
+              aria-label={placeholder}
               placeholder={value.length === 0 ? placeholder : undefined}
               disabled={disabled}
             />
