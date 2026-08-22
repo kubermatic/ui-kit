@@ -1,0 +1,21 @@
+/*
+ * Storybook-only stylesheet.
+ *
+ * Mirrors what a consuming app is expected to set up (see README): Tailwind
+ * first, then the animation and shadcn layers the primitives rely on, then the
+ * kit's own tokens. `@source` points Tailwind at the component sources so the
+ * utility classes used inside them survive the content scan.
+ */
+
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+
+@source '../src';
+
+@import '../src/styles/theme.css';
+
+body {
+  @apply bg-background text-foreground;
+  font-family: 'Inter', sans-serif;
+}
