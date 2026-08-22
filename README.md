@@ -2,7 +2,7 @@
 
 Shared React component primitives and design tokens for Kubermatic dashboards.
 
-33 primitives (button, dialog, table, form controls, sidebar, …) built on
+32 primitives (button, dialog, table, form controls, sidebar, …) built on
 Base UI and Tailwind 4, plus the OKLch light/dark token set they render
 against. Storybook is the workbench.
 
@@ -100,8 +100,23 @@ npm run storybook        # dev server on :6006
 npm run build-storybook  # static build
 ```
 
+Start at **Welcome → Getting started**, the docs front door. Below it,
+**Foundations** holds the token catalogue and the contrast audit, and
+**Primitives** has one entry per component — all 32 are covered.
+
+Every story is also a test. Under `npm test` each one renders in Playwright
+Chromium and is run through axe at `test: 'error'`, so an accessibility
+regression fails CI rather than sitting unread in a panel. The palette clears
+WCAG AA on every pair it renders, in both themes.
+
+Story-level a11y only ever runs against the default globals, so axe never sees
+the dark theme — **Foundations → Contrast** measures all 20 pairs in both and
+asserts none fail. Autodocs is on, so each component also has a generated Docs
+page with a props table.
+
 The toolbar theme switch toggles a `.dark` class on the wrapper — the same
-mechanism consuming apps use, so both token sets get exercised.
+mechanism consuming apps use, so both token sets get exercised. Section order
+is pinned by `options.storySort` in `.storybook/preview.tsx`.
 
 Storybook merges the root `vite.config.ts`, which is a _library_ build. The
 lib-mode config and `vite-plugin-dts` are stripped in `.storybook/main.ts`
@@ -110,9 +125,10 @@ lib-mode config and `vite-plugin-dts` are stripped in `.storybook/main.ts`
 Conventions for writing and reviewing stories — title taxonomy, the four story
 skeletons, token discipline, the design-review checklist — live in
 [`.agents/skills/maintain-ui-kit-storybook/`](.agents/skills/maintain-ui-kit-storybook/SKILL.md),
-along with a [backlog](.agents/skills/maintain-ui-kit-storybook/reference/coverage-backlog.md)
-of the 22 primitives that still have no story. Coding agents load it
-automatically; it reads as plain documentation otherwise.
+alongside a [coverage map](.agents/skills/maintain-ui-kit-storybook/reference/coverage-map.md)
+recording where each primitive's coverage lives, the gaps that remain, and the
+traps worth not rediscovering. Coding agents load it automatically; it reads as
+plain documentation otherwise.
 
 ## Scripts
 

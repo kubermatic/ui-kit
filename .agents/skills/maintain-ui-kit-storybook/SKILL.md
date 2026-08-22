@@ -11,10 +11,10 @@ place a primitive is seen against both token sets, and — through
 
 **Reference files** (read the one that matches the task, not all of them):
 
-| File                            | When                                                                 |
-| ------------------------------- | -------------------------------------------------------------------- |
-| `reference/story-patterns.md`   | Writing a new story — four proven skeletons plus the two guards      |
-| `reference/coverage-backlog.md` | Picking up an uncovered primitive — what's missing and why it's hard |
+| File                          | When                                                                     |
+| ----------------------------- | ------------------------------------------------------------------------ |
+| `reference/story-patterns.md` | Writing a new story — four proven skeletons plus the two guards          |
+| `reference/coverage-map.md`   | Where each primitive's coverage lives, the remaining gaps, and the traps |
 
 ---
 
@@ -35,11 +35,26 @@ place a primitive is seen against both token sets, and — through
 ## File and title taxonomy
 
 Story files sit beside their component: `src/components/ui/<name>.stories.tsx`.
+Docs-only pages are MDX and live at the `src/` root — currently just
+`src/welcome.mdx`.
+
+> **MDX and Prettier.** Do not put a `{/* … */}` JSX comment in an MDX file.
+> Prettier formats MDX as markdown and escapes the asterisks to `{/\* … \*/}`,
+> which stops being valid JS — the story then fails to index with
+> `Could not parse expression with acorn`, and only `build-storybook` catches
+> it. Put the explanation in prose instead.
 
 | Title prefix   | Contents                                           | Example                     |
 | -------------- | -------------------------------------------------- | --------------------------- |
+| `Welcome/`     | Docs-only MDX pages — the front door               | `Welcome/Getting started`   |
 | `Foundations/` | Token sets, scales, anything not a React component | `Foundations/Design Tokens` |
 | `Primitives/`  | Components                                         | `Primitives/Button`         |
+
+Sidebar order is pinned by `options.storySort` in `.storybook/preview.tsx`
+(`Welcome`, `Foundations`, `Primitives`) — without it the sections sort
+alphabetically and Storybook opens on the token catalogue instead of the
+install instructions. A new top-level section has to be added to that array or
+it sorts to the bottom.
 
 Multi-word titles are **sentence case**, not title case:
 `Primitives/Form controls`, not `Primitives/Form Controls`.
@@ -145,31 +160,40 @@ token to the right `COLOR_GROUPS` entry in the same change.
 
 ## Design review pass
 
-Run this before calling a story done. The a11y addon is configured
-`test: 'todo'` in `.storybook/preview.tsx` — violations show in the panel but
-**never fail CI**, so items 2 and 6 are a human responsibility.
+Run this before calling a story done. Items 2 and 6 are now mostly automated —
+the a11y addon runs axe over every story at `test: 'error'`, so a violation
+fails `npm test` rather than sitting unread in a panel. What is left for a human
+is the part axe cannot see.
 
 1. **Both themes.** Toggle the toolbar. Portalled content (dialogs, dropdowns,
    tooltips) is covered because the decorator toggles `.dark` on
    `documentElement` as well as its own wrapper — but only if the content is
    actually open in the story. See the overlay note below.
-2. **a11y panel is clean.** Icon-only controls need an `aria-label`; `button`'s
+2. **a11y is green.** Enforced, so this fails the build rather than the review.
+   The usual cause is an icon-only control with no `aria-label` — `button`'s
    `WithIcon` story shows the pattern. Decorative icons inside a labelled
-   control need nothing.
+   control need nothing. Judgement still required on _which_ name is right: axe
+   accepts "Remove", a user is better served by "Remove web-frontend-01".
 3. **Variant matrix is complete** against the `cva` config.
 4. **Spacing matches its siblings.** `gap-3` for button rows, `gap-2` for badge
    rows, `gap-4`/`flex-col` for stacked alerts. Consistency across stories is
    what makes a token change reviewable at a glance.
 5. **Focus ring is visible** on every interactive state, in both themes. Tab
    through rather than trusting the screenshot.
-6. **Contrast holds in dark.** Soft tokens are the trap: `--warning-soft` and
-   `--error-foreground` are drawn on the page background rather than on their
-   solid counterpart, so they carry their own contrast and are lightened in
-   dark. Changing one means checking both themes.
-7. **Docs prose earns its place.** The JSDoc above a story renders in the docs
-   page. Write it only when there is a decision to explain — why `warning` uses
-   `--warning-soft`, why icons are auto-sized. A comment restating the story
-   name is noise.
+6. **Contrast.** Enforced by axe like the rest, and the palette currently clears
+   AA on every pair. Two things still need a human: axe only ever runs against
+   the _default_ globals, so dark contrast is covered by
+   `Foundations/Contrast` instead — add any new token pairing there. And the
+   `-soft` tokens remain the trap: `--warning-soft`, `--info-soft`,
+   `--success-soft` and `--error-foreground` are drawn as text on the page
+   background rather than on their solid counterpart, so they carry their own
+   contrast and are lightened in dark. A status colour used as _text_ wants one
+   of those, never the solid token — `--destructive` as text misses AA in both
+   themes.
+7. **Docs prose earns its place.** The JSDoc above a story renders on its
+   autodocs page. Write it only when there is a decision to explain — why
+   `warning` uses `--warning-soft`, why icons are auto-sized. A comment
+   restating the story name is noise.
 
 ## Play-function guards
 
@@ -199,14 +223,25 @@ working implementations in `reference/story-patterns.md`:
 ## Overlays and portals
 
 Base UI portals overlay content to `document.body`, outside the story canvas.
-Two consequences:
+Three consequences:
 
 - **Give the story an open state** (`defaultOpen`, or `open` on the root).
   A story showing only a closed trigger screenshots nothing and reviews
-  nothing.
+  nothing. It also hides context errors — a `DropdownMenuLabel` outside a
+  group throws, but only once the popup mounts.
 - **Query with `screen`, not `canvas`,** inside a play function — `canvas` is
   scoped to the story root, which the popup is not inside. `screen` and
   `within` are both re-exported from `storybook/test`.
+- **Wrap visibility assertions in `waitFor`.** The popup mounts a frame before
+  `data-open:animate-in` / `fade-in-0` has taken it off opacity 0, so a
+  chained `toBeVisible` races the entry animation. `findByText` retries the
+  _query_, not the assertion, so it does not help:
+
+  ```tsx
+  await waitFor(async () => {
+    await expect(screen.getByText('…')).toBeVisible();
+  });
+  ```
 
 ## Verify
 
