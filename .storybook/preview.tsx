@@ -4,26 +4,33 @@ import type { Preview, Decorator } from '@storybook/react-vite';
 import './preview.css';
 
 /**
- * The kit ships light and dark token sets, with dark selected by a `.dark`
- * class on an ancestor. Every story renders inside that wrapper so the toolbar
- * switch exercises the same mechanism a consuming app uses.
+ * Dialogs, dropdowns and tooltips portal into `document.body`, outside the
+ * decorator's wrapper, so the class is toggled on `documentElement` as well —
+ * otherwise portalled content would stay light while the story goes dark.
  */
-const withTheme: Decorator = (Story, context) => {
-  const theme = context.globals.theme as 'light' | 'dark';
-
+function ThemeWrapper({
+  theme,
+  children,
+}: {
+  theme: 'light' | 'dark';
+  children: React.ReactNode;
+}) {
   React.useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
-    document.body.style.background = 'var(--background)';
   }, [theme]);
 
   return (
     <div className={theme === 'dark' ? 'dark' : ''}>
-      <div className="bg-background text-foreground p-6">
-        <Story />
-      </div>
+      <div className="bg-background text-foreground p-6">{children}</div>
     </div>
   );
-};
+}
+
+const withTheme: Decorator = (Story, context) => (
+  <ThemeWrapper theme={context.globals.theme as 'light' | 'dark'}>
+    <Story />
+  </ThemeWrapper>
+);
 
 const preview: Preview = {
   decorators: [withTheme],

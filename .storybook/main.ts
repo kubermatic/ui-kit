@@ -17,18 +17,17 @@ const config: StorybookConfig = {
    * Tailwind is added back.
    */
   viteFinal: async (config) => {
-    config.plugins = (config.plugins ?? [])
-      .flat(Infinity)
-      .filter(
-        (plugin) =>
-          !(
-            plugin &&
-            typeof plugin === 'object' &&
-            'name' in plugin &&
-            String((plugin as { name: string }).name).startsWith('vite:dts')
-          ),
-      );
-    config.plugins.push(tailwindcss());
+    // Cast before flattening: Vite's recursive plugin type makes `flat()`
+    // blow TypeScript's instantiation depth limit (TS2589).
+    const plugins = ((config.plugins ?? []) as unknown[]).flat(
+      Infinity,
+    ) as Array<{ name?: string } | null | undefined>;
+
+    const kept = plugins.filter(
+      (plugin) => !plugin?.name?.startsWith('vite:dts'),
+    );
+
+    config.plugins = [...kept, tailwindcss()] as typeof config.plugins;
     if (config.build) delete config.build.lib;
     return config;
   },

@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { expect } from 'storybook/test';
 import { Plus, Trash2 } from 'lucide-react';
 
 import { Button } from './button';
@@ -93,4 +94,24 @@ export const Disabled: Story = {
       </Button>
     </div>
   ),
+};
+
+/**
+ * Guards the Tailwind wiring rather than the component.
+ *
+ * `toBeVisible` passes on a completely unstyled button, so it cannot detect a
+ * broken stylesheet. Asserting a resolved `getComputedStyle` value does: if the
+ * `@source` scan or the token import regresses, `bg-primary` silently produces
+ * no colour and this fails. That is the automated form of the manual check that
+ * caught a 51KB-vs-118KB stylesheet difference during the extraction.
+ */
+export const CssCheck: Story = {
+  args: { children: 'Submit' },
+  play: async ({ canvas }) => {
+    const button = canvas.getByRole('button', { name: /submit/i });
+    // `bg-primary` resolves through the --primary token in theme.css.
+    await expect(getComputedStyle(button).backgroundColor).toBe(
+      'oklch(0.4232 0.1004 242)',
+    );
+  },
 };
