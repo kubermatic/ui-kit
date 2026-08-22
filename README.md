@@ -107,6 +107,13 @@ Storybook merges the root `vite.config.ts`, which is a _library_ build. The
 lib-mode config and `vite-plugin-dts` are stripped in `.storybook/main.ts`
 (dts alone was over half the build time) and Tailwind is added back there.
 
+Conventions for writing and reviewing stories — title taxonomy, the four story
+skeletons, token discipline, the design-review checklist — live in
+[`.agents/skills/maintain-ui-kit-storybook/`](.agents/skills/maintain-ui-kit-storybook/SKILL.md),
+along with a [backlog](.agents/skills/maintain-ui-kit-storybook/reference/coverage-backlog.md)
+of the 22 primitives that still have no story. Coding agents load it
+automatically; it reads as plain documentation otherwise.
+
 ## Scripts
 
 | Script              | Purpose                                        |
