@@ -1,6 +1,9 @@
 import * as React from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { VariantProps } from 'class-variance-authority';
 import { expect, screen, within } from 'storybook/test';
+
+import { variantKeys } from '@/test/variant-matrix';
 import {
   Boxes,
   HardDrive,
@@ -54,7 +57,26 @@ import {
   SidebarRail,
   SidebarSeparator,
   SidebarTrigger,
+  sidebarMenuButtonVariants,
 } from './sidebar';
+
+type MenuButtonVariant = NonNullable<
+  VariantProps<typeof sidebarMenuButtonVariants>['variant']
+>;
+type MenuButtonSize = NonNullable<
+  VariantProps<typeof sidebarMenuButtonVariants>['size']
+>;
+
+const MENU_VARIANTS = variantKeys<MenuButtonVariant>({
+  default: true,
+  outline: true,
+});
+
+const MENU_SIZES = variantKeys<MenuButtonSize>({
+  default: true,
+  sm: true,
+  lg: true,
+});
 
 /**
  * The eight tokens this component owns. The catalogue in
@@ -408,6 +430,43 @@ export const Mobile: Story = {
     await expect(sheet).toHaveAttribute('data-mobile', 'true');
     await expect(within(sheet).getByText('production-eu')).toBeInTheDocument();
   },
+};
+
+/**
+ * `SidebarMenuButton` carries a variant and size scale of its own, separate
+ * from `Button`'s, and the app-shell stories above only ever exercise
+ * `default` plus the `lg` used by the header and footer rows.
+ *
+ * `collapsible="none"` renders the panel inline rather than fixed to the
+ * viewport, which is what makes a matrix like this reviewable at all.
+ */
+export const MenuButtonVariants: Story = {
+  parameters: { layout: 'padded' },
+  render: () => (
+    <SidebarProvider className="min-h-fit">
+      <Sidebar collapsible="none" className="rounded-md border">
+        <SidebarContent>
+          {MENU_VARIANTS.map((variant) => (
+            <SidebarGroup key={variant}>
+              <SidebarGroupLabel>{variant}</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {MENU_SIZES.map((size) => (
+                    <SidebarMenuItem key={size}>
+                      <SidebarMenuButton variant={variant} size={size}>
+                        <Server />
+                        <span>size={size}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          ))}
+        </SidebarContent>
+      </Sidebar>
+    </SidebarProvider>
+  ),
 };
 
 /**

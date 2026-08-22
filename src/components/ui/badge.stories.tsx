@@ -1,17 +1,28 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { VariantProps } from 'class-variance-authority';
 import { CheckCircle2, CircleAlert } from 'lucide-react';
 
-import { Badge } from './badge';
+import { variantKeys } from '@/test/variant-matrix';
+import { Badge, badgeVariants } from './badge';
 
-const VARIANTS = [
-  'default',
-  'secondary',
-  'outline',
-  'success',
-  'warning',
-  'info',
-  'destructive',
-] as const;
+type BadgeVariant = NonNullable<VariantProps<typeof badgeVariants>['variant']>;
+
+/*
+ * `ghost` and `link` shipped for some time with no story rendering them, which
+ * is what `variantKeys` now prevents: this fails to type-check the moment the
+ * cva config gains a variant that is missing here.
+ */
+const VARIANTS = variantKeys<BadgeVariant>({
+  default: true,
+  secondary: true,
+  outline: true,
+  success: true,
+  warning: true,
+  info: true,
+  destructive: true,
+  ghost: true,
+  link: true,
+});
 
 const meta = {
   title: 'Primitives/Badge',

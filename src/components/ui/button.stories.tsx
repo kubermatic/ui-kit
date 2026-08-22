@@ -1,21 +1,45 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { VariantProps } from 'class-variance-authority';
 import { expect } from 'storybook/test';
 import { Plus, Trash2 } from 'lucide-react';
 
-import { Button } from './button';
+import { variantKeys } from '@/test/variant-matrix';
+import { Button, buttonVariants } from './button';
 
-const VARIANTS = [
-  'default',
-  'secondary',
-  'outline',
-  'ghost',
-  'link',
-  'destructive',
-  'outlineDestructive',
-  'ghostDestructive',
-] as const;
+type ButtonVariant = NonNullable<
+  VariantProps<typeof buttonVariants>['variant']
+>;
+type ButtonSize = NonNullable<VariantProps<typeof buttonVariants>['size']>;
 
-const SIZES = ['xs', 'sm', 'default', 'lg'] as const;
+const VARIANTS = variantKeys<ButtonVariant>({
+  default: true,
+  secondary: true,
+  outline: true,
+  ghost: true,
+  link: true,
+  destructive: true,
+  outlineDestructive: true,
+  ghostDestructive: true,
+});
+
+/*
+ * Includes the icon sizes, which the rendered matrix used to omit while
+ * `argTypes` listed them separately — two hand-maintained lists that had
+ * already drifted. Both now read this one.
+ */
+const SIZES = variantKeys<ButtonSize>({
+  xs: true,
+  sm: true,
+  default: true,
+  lg: true,
+  'icon-xs': true,
+  'icon-sm': true,
+  icon: true,
+  'icon-lg': true,
+});
+
+/** The icon sizes are square and take no label, so they render an icon. */
+const isIconSize = (size: ButtonSize) => size.startsWith('icon');
 
 const meta = {
   title: 'Primitives/Button',
@@ -23,10 +47,7 @@ const meta = {
   parameters: { layout: 'centered' },
   argTypes: {
     variant: { control: 'select', options: VARIANTS },
-    size: {
-      control: 'select',
-      options: [...SIZES, 'icon-xs', 'icon-sm', 'icon', 'icon-lg'],
-    },
+    size: { control: 'select', options: SIZES },
     disabled: { control: 'boolean' },
   },
   args: { children: 'Create cluster' },
@@ -53,11 +74,17 @@ export const Variants: Story = {
 export const Sizes: Story = {
   render: (args) => (
     <div className="flex flex-wrap items-center gap-3">
-      {SIZES.map((size) => (
-        <Button key={size} {...args} size={size}>
-          {size}
-        </Button>
-      ))}
+      {SIZES.map((size) =>
+        isIconSize(size) ? (
+          <Button key={size} {...args} size={size} aria-label={size}>
+            <Plus />
+          </Button>
+        ) : (
+          <Button key={size} {...args} size={size}>
+            {size}
+          </Button>
+        ),
+      )}
     </div>
   ),
 };

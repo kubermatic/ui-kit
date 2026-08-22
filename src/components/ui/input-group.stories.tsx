@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { VariantProps } from 'class-variance-authority';
 import { expect } from 'storybook/test';
 import { Copy, Search, TerminalIcon } from 'lucide-react';
 
+import { variantKeys } from '@/test/variant-matrix';
 import {
   InputGroup,
   InputGroupAddon,
@@ -9,15 +11,29 @@ import {
   InputGroupInput,
   InputGroupText,
   InputGroupTextarea,
+  inputGroupAddonVariants,
+  inputGroupButtonVariants,
 } from './input-group';
 import { Label } from './label';
 
-const ALIGNMENTS = [
-  'inline-start',
-  'inline-end',
-  'block-start',
-  'block-end',
-] as const;
+type Align = NonNullable<VariantProps<typeof inputGroupAddonVariants>['align']>;
+type ButtonSize = NonNullable<
+  VariantProps<typeof inputGroupButtonVariants>['size']
+>;
+
+const ALIGNMENTS = variantKeys<Align>({
+  'inline-start': true,
+  'inline-end': true,
+  'block-start': true,
+  'block-end': true,
+});
+
+const BUTTON_SIZES = variantKeys<ButtonSize>({
+  xs: true,
+  sm: true,
+  'icon-xs': true,
+  'icon-sm': true,
+});
 
 const meta = {
   title: 'Primitives/Input group',
@@ -140,6 +156,32 @@ export const WithTextarea: Story = {
           <InputGroupText>Runs on first boot</InputGroupText>
         </InputGroupAddon>
       </InputGroup>
+    </div>
+  ),
+};
+
+/**
+ * `InputGroupButton` carries its own size scale, separate from `Button`'s. The
+ * icon sizes are square; the text sizes are not, so a row of all four is the
+ * only place the difference is visible.
+ */
+export const ButtonSizes: Story = {
+  render: () => (
+    <div className="flex max-w-sm flex-col gap-6">
+      {BUTTON_SIZES.map((size) => (
+        <InputGroup key={size}>
+          <InputGroupInput aria-label={size} placeholder={size} />
+          <InputGroupAddon align="inline-end">
+            {size.startsWith('icon') ? (
+              <InputGroupButton size={size} aria-label={`Copy (${size})`}>
+                <Copy />
+              </InputGroupButton>
+            ) : (
+              <InputGroupButton size={size}>Copy</InputGroupButton>
+            )}
+          </InputGroupAddon>
+        </InputGroup>
+      ))}
     </div>
   ),
 };

@@ -1,10 +1,22 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { VariantProps } from 'class-variance-authority';
 import { Activity, HardDrive, Network, Terminal } from 'lucide-react';
 
+import { variantKeys } from '@/test/variant-matrix';
 import { Badge } from './badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './tabs';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  tabsListVariants,
+} from './tabs';
 
-const VARIANTS = ['default', 'line'] as const;
+type TabsListVariant = NonNullable<
+  VariantProps<typeof tabsListVariants>['variant']
+>;
+
+const VARIANTS = variantKeys<TabsListVariant>({ default: true, line: true });
 
 const meta = {
   title: 'Primitives/Tabs',
