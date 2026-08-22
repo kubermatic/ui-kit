@@ -89,9 +89,14 @@ Non-negotiables, each of which the existing files rely on:
   is what makes `args` type-check against the component's props. Drop the
   generic (`satisfies Meta`) only for stories with no single root component,
   as `form-controls` and `tokens` do.
-- Variant lists are hoisted to `as const` arrays and reused by **both**
-  `argTypes` and the render, so adding a variant to the array cannot leave the
-  matrix stale.
+- Variant lists come from `variantKeys<T>({ … })` (`src/test/variant-matrix.ts`)
+  and are reused by **both** `argTypes` and the render. Its parameter type is
+  `Record<T, true>`, so a variant added to the `cva` config and not to the story
+  fails `npm run typecheck` — an `as const` array cannot be checked that way, and
+  `badge` had shipped `ghost` and `link` with no story rendering them. Pass the
+  union explicitly; inference proves nothing. Where a story needs per-variant
+  content rather than a bare list, `satisfies Record<T, …>` on that content gets
+  the same guarantee — see `alert`.
 - `Playground` is always the first export.
 
 ### Choosing `layout`
@@ -174,7 +179,10 @@ is the part axe cannot see.
    `WithIcon` story shows the pattern. Decorative icons inside a labelled
    control need nothing. Judgement still required on _which_ name is right: axe
    accepts "Remove", a user is better served by "Remove web-frontend-01".
-3. **Variant matrix is complete** against the `cva` config.
+3. **Variant matrix is complete** against the `cva` config — enforced by
+   `variantKeys`, so this is a typecheck failure rather than a review comment.
+   It only holds for axes the story actually routes through it: check that a
+   second axis (`size` beside `variant`) is covered too.
 4. **Spacing matches its siblings.** `gap-3` for button rows, `gap-2` for badge
    rows, `gap-4`/`flex-col` for stacked alerts. Consistency across stories is
    what makes a token change reviewable at a glance.

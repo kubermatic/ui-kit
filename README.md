@@ -132,13 +132,38 @@ plain documentation otherwise.
 
 ## Scripts
 
-| Script              | Purpose                                        |
-| ------------------- | ---------------------------------------------- |
-| `npm run build`     | Typecheck, then emit `dist/` with `.d.ts`      |
-| `npm run typecheck` | `tsc --noEmit` across src, stories and configs |
-| `npm test`          | Vitest unit tests                              |
-| `npm run storybook` | Storybook dev server                           |
-| `npm run lint:fix`  | ESLint autofix, then Prettier                  |
+| Script                  | Purpose                                              |
+| ----------------------- | ---------------------------------------------------- |
+| `npm run build`         | Typecheck, then emit `dist/` with `.d.ts`            |
+| `npm run typecheck`     | `tsc --noEmit` across src, stories and configs       |
+| `npm test`              | Unit tests, plus every story as a browser + axe test |
+| `npm run test:coverage` | `npm test` with a V8 coverage report                 |
+| `npm run storybook`     | Storybook dev server                                 |
+| `npm run lint:fix`      | ESLint autofix, then Prettier                        |
+
+## CI
+
+Prow runs three presubmits on every pull request, defined in `.prow.yaml` and
+implemented as scripts under `hack/ci/` so they can be run locally unchanged:
+
+| Job                 | Script              | Covers                                     |
+| ------------------- | ------------------- | ------------------------------------------ |
+| `pre-ui-kit-verify` | `hack/ci/verify.sh` | `typecheck` and `lint`                     |
+| `pre-ui-kit-test`   | `hack/ci/test.sh`   | Unit tests and every story, in Chromium    |
+| `pre-ui-kit-build`  | `hack/ci/build.sh`  | The library build and the static Storybook |
+
+`test.sh` installs Chromium explicitly: `.npmrc` sets `ignore-scripts=true`, so
+Playwright's postinstall never runs and the browser is not downloaded by
+`npm ci`.
+
+Publishing is written (`hack/ci/publish.sh`, idempotent — it publishes only when
+the version in `package.json` is new) but the postsubmit is left commented out
+in `.prow.yaml` until infra provisions a GitHub Packages token. No other
+Kubermatic repository publishes an npm package, so no preset for one exists yet.
+
+That script also builds explicitly rather than relying on `prepublishOnly`:
+`ignore-scripts=true` suppresses the package's own lifecycle scripts too, so a
+`prepublishOnly` guard would silently never run here.
 
 ## Known constraints
 

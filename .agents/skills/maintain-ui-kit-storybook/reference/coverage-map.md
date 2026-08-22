@@ -35,16 +35,17 @@ renders there. Opt a meta out with `tags: ['!autodocs']`.
 Most stories document. These four are the ones that would let a real regression
 through if deleted:
 
-| Story                              | Guards                                                                                                                                      |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Button → CssCheck`                | The Tailwind `@source` scan and the `theme.css` import, via a resolved `getComputedStyle` value                                             |
-| `Design Tokens → Coverage`         | That the catalogue and the stylesheet's `.dark` block still agree, in both directions                                                       |
-| `Sidebar → TokenScale`             | The eight `--sidebar-*` tokens. They are consumed by `sidebar.tsx` and nothing else, so this is their only proof                            |
-| `Form → Invalid`                   | That `FormControl` forwards `id`, `aria-describedby` and `aria-invalid` onto the real input — invisible wiring that fails silently          |
-| `Separator → DecorativeVsSemantic` | The `role="none"` / `role="separator"` split, which is the only non-trivial thing the component does                                        |
-| `Contrast → Light` / `→ Dark`      | Every token pair's WCAG ratio, in both themes. Replaces the one axe rule that is switched off, with a measurement that cannot silently grow |
-| `Sidebar → Mobile`                 | That the sub-768px branch really is the one rendering — it asserts the desktop panel is absent before opening the mobile Sheet              |
-| `Avatar → Loaded`                  | That the fallback _unmounts_ when the image resolves. A failed load looks almost identical, so asserting presence alone passes either way   |
+| Story                               | Guards                                                                                                                                                                         |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Button → CssCheck`                 | The Tailwind `@source` scan and the `theme.css` import, via a resolved `getComputedStyle` value                                                                                |
+| `Design Tokens → Coverage`          | That the catalogue and the stylesheet's `.dark` block still agree, in both directions                                                                                          |
+| `Sidebar → TokenScale`              | The eight `--sidebar-*` tokens. They are consumed by `sidebar.tsx` and nothing else, so this is their only proof                                                               |
+| `Form → Invalid`                    | That `FormControl` forwards `id`, `aria-describedby` and `aria-invalid` onto the real input — invisible wiring that fails silently                                             |
+| `Separator → DecorativeVsSemantic`  | The `role="none"` / `role="separator"` split, which is the only non-trivial thing the component does                                                                           |
+| `Contrast → Light` / `→ Dark`       | Every token pair's WCAG ratio, in both themes. Replaces the one axe rule that is switched off, with a measurement that cannot silently grow                                    |
+| `Sidebar → Mobile`                  | That the sub-768px branch really is the one rendering — it asserts the desktop panel is absent before opening the mobile Sheet                                                 |
+| `Avatar → Loaded`                   | That the fallback _unmounts_ when the image resolves. A failed load looks almost identical, so asserting presence alone passes either way                                      |
+| `variantKeys` (every variant story) | That the rendered matrix still matches the `cva` config. Not a story but a type: `Record<T, true>` fails typecheck when a variant is added to a component and not to its story |
 
 ---
 
@@ -237,6 +238,23 @@ menus — it is the combination that is wrong.
 a story rendering two app shells side by side trips
 `landmark-no-duplicate-main` and `landmark-unique`. Split the variants into one
 story each rather than exempting the rule; the rule is right.
+
+### An exhaustiveness check cannot be an unused const
+
+The obvious way to prove a variant list is complete is a throwaway binding:
+
+```ts
+type Missing = Exclude<Variant, (typeof VARIANTS)[number]>;
+const _exhaustive: [Missing] extends [never] ? true : Missing = true;
+```
+
+It works — and `tsconfig.json` sets `noUnusedLocals`, which rejects it with
+TS6133 before the interesting error is ever reached. Unused _type aliases_ are
+flagged the same way, so hiding the check in a type does not help either.
+
+The guard therefore has to be something the story genuinely consumes.
+`variantKeys<T>({ … })` returns the array that `argTypes` and the render both
+read, and gets its completeness from the parameter type `Record<T, true>`.
 
 ### Base UI warns when a `render` target is not a real button
 
