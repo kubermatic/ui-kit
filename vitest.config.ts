@@ -1,15 +1,42 @@
+/*
+ * Copyright 2026 The Kubermatic ui-kit Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import path from 'node:path';
 import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
 import { playwright } from '@vitest/browser-playwright';
+import { unitTest, browserOptimizeDeps } from '@kubermatic/config/vitest';
 
-// More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
+/*
+ * One test run for the whole workspace: unit tests in jsdom, and every story as
+ * a real browser test through @storybook/addon-vitest. Each story is also an axe
+ * pass, so an accessibility regression fails here rather than going unnoticed in
+ * a panel.
+ */
 export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@': path.resolve(import.meta.dirname, './src'),
+      /*
+       * `@` is ui-kit's own convention and resolves into that package only.
+       * ui-patterns should use relative imports rather than claim a second
+       * meaning for the same prefix — one alias cannot point at two packages.
+       */
+      '@': path.resolve(import.meta.dirname, './packages/ui-kit/src'),
     },
   },
   test: {
@@ -17,41 +44,19 @@ export default defineConfig({
       {
         extends: true,
         test: {
-          environment: 'jsdom',
-          globals: true,
-          setupFiles: ['./src/test/setup.ts'],
+          ...unitTest,
+          setupFiles: ['./packages/ui-kit/src/test/setup.ts'],
         },
       },
       {
         extends: true,
         plugins: [
-          // The plugin will run tests for the stories defined in your Storybook config
-          // See options at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon#storybooktest
           storybookTest({
             configDir: path.join(import.meta.dirname, '.storybook'),
           }),
         ],
-        /*
-         * aria-query (via @testing-library/dom) is CommonJS with no ESM entry,
-         * so browser mode cannot resolve its named exports natively. Forcing it
-         * through the dep optimizer makes Vite synthesise them.
-         *
-         * react-hook-form is here for a different reason: it is imported only
-         * by the form stories, so Vite discovers it mid-run, re-optimizes, and
-         * reloads the page underneath the test — 'Failed to fetch dynamically
-         * imported module', once, on a cold cache. Pre-declaring it keeps CI
-         * from failing on a run that passes locally against a warm cache.
-         */
         optimizeDeps: {
-          include: [
-            'aria-query',
-            'lz-string',
-            'dom-accessibility-api',
-            'pretty-format',
-            'react-hook-form',
-            '@testing-library/dom',
-            '@testing-library/user-event',
-          ],
+          include: browserOptimizeDeps,
         },
         test: {
           name: 'storybook',

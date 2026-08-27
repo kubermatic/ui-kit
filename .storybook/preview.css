@@ -1,19 +1,22 @@
 /*
  * Storybook-only stylesheet.
  *
- * Mirrors what a consuming app is expected to set up (see README): Tailwind
- * first, then the animation and shadcn layers the primitives rely on, then the
- * kit's own tokens. `@source` points Tailwind at the component sources so the
- * utility classes used inside them survive the content scan.
+ * Mirrors what a consuming app is expected to set up, but against source rather
+ * than dist: `@kubermatic/config/tailwind` is the one-line version products use
+ * and it points `@source` at the built package, which does not exist while
+ * Storybook is running off the working tree.
+ *
+ * `@source` points Tailwind at the component sources so the utility classes used
+ * inside them survive the content scan.
  */
 
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 
-@source '../src';
+@source '../packages/ui-kit/src';
 
-@import '../src/styles/theme.css';
+@import '../packages/ui-kit/src/styles/theme.css';
 
 body {
   @apply bg-background text-foreground;

@@ -1,29 +1,13 @@
 {
+  // Root project: the repo-level tooling, not the packages.
+  //
+  // Each package carries its own tsconfig.json, which is also what lets ESLint's
+  // `projectService` resolve every source file to a project without a solution
+  // file listing them all. `npm run typecheck` runs this one and then each
+  // package's in turn.
+  "extends": "@kubermatic/config/tsconfig-react",
   "compilerOptions": {
-    "target": "ES2022",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "jsx": "react-jsx",
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "isolatedModules": true,
-    "verbatimModuleSyntax": true,
-    "moduleDetection": "force",
-    "noEmit": true,
-    "baseUrl": ".",
-    "paths": { "@/*": ["src/*"] }
+    "types": ["node"]
   },
-  "include": [
-    "src",
-    "*.ts",
-    "*.d.ts",
-    ".storybook/**/*.ts",
-    ".storybook/**/*.tsx"
-  ]
+  "include": ["*.ts", "*.d.ts", ".storybook/**/*.ts", ".storybook/**/*.tsx"]
 }

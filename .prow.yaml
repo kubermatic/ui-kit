@@ -79,12 +79,13 @@ presubmits:
 # template-project uses for a job that is written but not yet wired.
 #
 # hack/ci/publish.sh is ready and is idempotent, so this is safe to run on every
-# merge: it publishes only when the version in package.json is one the registry
-# has not seen. What is missing is the credential. No Kubermatic repo publishes
-# an npm package today, so there is no preset for a registry token the way there
-# is for docker (preset-docker-push) or vault (preset-vault), and ui-kit would be
-# the first. Uncommenting this before that secret exists buys nothing except a
-# postsubmit that fails on every merge to main.
+# merge: it walks the publishable workspaces and publishes only the ones whose
+# version the registry has not seen. What is missing is the credential. No
+# Kubermatic repo publishes an npm package today, so there is no preset for a
+# registry token the way there is for docker (preset-docker-push) or vault
+# (preset-vault), and ui-kit would be the first. Uncommenting this before that
+# secret exists buys nothing except a postsubmit that fails on every merge to
+# main.
 #
 # To enable: have infra provision a GitHub Packages token with write:packages,
 # expose it the way preset-vault exposes its secrets, and uncomment.

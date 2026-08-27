@@ -1,10 +1,27 @@
-# @kubermatic/ui-kit
+# Kubermatic UI Kit
 
-Shared React component primitives and design tokens for Kubermatic dashboards.
+The design system behind the Kubermatic dashboards: design tokens, React
+component primitives, and the toolchain the frontend stack agrees on.
 
 32 primitives (button, dialog, table, form controls, sidebar, …) built on
 Base UI and Tailwind 4, plus the OKLch light/dark token set they render
 against. Storybook is the workbench.
+
+## Repository layout
+
+A workspace. One Storybook, one decision log, one release pipeline; packages
+version independently.
+
+| Package              | Tier                       | Contents                                                                                      |
+| -------------------- | -------------------------- | --------------------------------------------------------------------------------------------- |
+| `@kubermatic/ui-kit` | 0 — tokens, 1 — primitives | `theme.css` and the 32 primitives                                                             |
+| `@kubermatic/config` | toolchain                  | Tailwind preset, tsconfig bases, ESLint, Prettier, Vitest, Renovate, and the version manifest |
+
+```
+packages/config/     packages/ui-kit/     .storybook/     docs/adr/
+```
+
+Design decisions and their reasoning live in [`docs/adr/`](docs/adr/).
 
 ---
 
@@ -71,6 +88,52 @@ import { Button, Badge, Table } from '@kubermatic/ui-kit';
 The build emits one module per component with `preserveModules`, so unused
 primitives tree-shake away.
 
+## `@kubermatic/config` — the toolchain and the dependency contract
+
+Across the three products only 6 of 28 shared-stack packages are pinned
+identically. `react` and `tailwindcss` both drift; `js-yaml` differs by a major.
+This package is where that stops.
+
+| Export                              | Purpose                                                                                                     |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `@kubermatic/config/tailwind`       | Tailwind v4 preset — the four-import setup as one line                                                      |
+| `@kubermatic/config/tsconfig`       | tsconfig base                                                                                               |
+| `@kubermatic/config/tsconfig-react` | tsconfig base plus the JSX transform                                                                        |
+| `@kubermatic/config/eslint`         | flat config — bans engine imports, local `components/ui/` copies, colour literals; requires licence headers |
+| `@kubermatic/config/prettier`       | one format                                                                                                  |
+| `@kubermatic/config/vitest`         | base test settings                                                                                          |
+| `@kubermatic/config/renovate`       | Renovate preset                                                                                             |
+| `@kubermatic/config/versions.json`  | the version manifest                                                                                        |
+
+Consume the ESLint config as `product` (the default export, strict) or
+`library` — ui-kit and ui-patterns are the packages allowed to import the
+engine directly:
+
+```js
+import product from '@kubermatic/config/eslint'; // products
+import { library } from '@kubermatic/config/eslint'; // ui-kit, ui-patterns
+```
+
+### Applying the contract
+
+```bash
+npx kubermatic-config check        # report drift, exit 1 if any
+npx kubermatic-config check --fix  # write the manifest in, then report
+```
+
+**npm and pnpm cannot inherit `overrides` from a dependency.** A published
+package cannot transitively pin its consumers' React, so the manifest has to be
+written into each product's `package.json` and a CI check is what keeps the copy
+honest. That is the honest mechanism; anything promising transitive singleton
+pinning from a package is either wrong or is shipping a second copy of React.
+
+`--fix` applies the mechanical drift. It deliberately will not delete
+`components.json` or `src/components/ui/` — removing a directory of components
+someone still imports is not a fix, it is an outage.
+
+The three categories and why they differ are in
+[ADR 2](docs/adr/0002-dependency-contract.md).
+
 ## Local development against a consuming app
 
 ```bash
@@ -118,9 +181,12 @@ The toolbar theme switch toggles a `.dark` class on the wrapper — the same
 mechanism consuming apps use, so both token sets get exercised. Section order
 is pinned by `options.storySort` in `.storybook/preview.tsx`.
 
-Storybook merges the root `vite.config.ts`, which is a _library_ build. The
-lib-mode config and `vite-plugin-dts` are stripped in `.storybook/main.ts`
-(dts alone was over half the build time) and Tailwind is added back there.
+Storybook resolves its Vite config from the repo root, where there is none —
+the only `vite.config.ts` lives in `packages/ui-kit` and is a _library_ build.
+So `.storybook/main.ts` supplies the two things that config used to provide:
+Tailwind, and the `@` alias the components import `@/lib/utils` through. The
+`vite-plugin-dts` strip is kept there as a guard, since dts alone was over half
+the build time.
 
 Conventions for writing and reviewing stories — title taxonomy, the four story
 skeletons, token discipline, the design-review checklist — live in
@@ -132,14 +198,17 @@ plain documentation otherwise.
 
 ## Scripts
 
-| Script                  | Purpose                                              |
-| ----------------------- | ---------------------------------------------------- |
-| `npm run build`         | Typecheck, then emit `dist/` with `.d.ts`            |
-| `npm run typecheck`     | `tsc --noEmit` across src, stories and configs       |
-| `npm test`              | Unit tests, plus every story as a browser + axe test |
-| `npm run test:coverage` | `npm test` with a V8 coverage report                 |
-| `npm run storybook`     | Storybook dev server                                 |
-| `npm run lint:fix`      | ESLint autofix, then Prettier                        |
+Run from the repo root; the build and typecheck fan out across workspaces.
+
+| Script                  | Purpose                                                  |
+| ----------------------- | -------------------------------------------------------- |
+| `npm run build`         | Typecheck, then emit each package's `dist/` with `.d.ts` |
+| `npm run typecheck`     | `tsc --noEmit` across every package, story and config    |
+| `npm test`              | Unit tests, plus every story as a browser + axe test     |
+| `npm run test:coverage` | `npm test` with a V8 coverage report                     |
+| `npm run storybook`     | Storybook dev server                                     |
+| `npm run lint:fix`      | ESLint autofix, then Prettier                            |
+| `npm run check:deps`    | Enforce the dependency contract (see below)              |
 
 ## CI
 
@@ -156,10 +225,16 @@ implemented as scripts under `hack/ci/` so they can be run locally unchanged:
 Playwright's postinstall never runs and the browser is not downloaded by
 `npm ci`.
 
-Publishing is written (`hack/ci/publish.sh`, idempotent — it publishes only when
-the version in `package.json` is new) but the postsubmit is left commented out
-in `.prow.yaml` until infra provisions a GitHub Packages token. No other
-Kubermatic repository publishes an npm package, so no preset for one exists yet.
+Publishing is written (`hack/ci/publish.sh`) but the postsubmit is left
+commented out in `.prow.yaml` until infra provisions a GitHub Packages token. No
+other Kubermatic repository publishes an npm package, so no preset for one
+exists yet.
+
+The script is idempotent and workspace-aware: it enumerates the publishable
+workspaces, and publishes each only when the registry has not seen its version.
+That is what lets `config` ship a patch without forcing a `ui-kit` release, and
+it is why the postsubmit is safe to run on every merge rather than only on
+tagged releases.
 
 That script also builds explicitly rather than relying on `prepublishOnly`:
 `ignore-scripts=true` suppresses the package's own lifecycle scripts too, so a
