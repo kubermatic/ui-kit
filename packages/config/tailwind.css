@@ -1,0 +1,48 @@
+/*
+ * Copyright 2026 The Kubermatic ui-kit Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/*
+ * Tailwind v4 preset for apps consuming @kubermatic/ui-kit.
+ *
+ *   @import '@kubermatic/config/tailwind';
+ *
+ * That one line replaces the four-import dance every product currently gets to
+ * write out by hand, in the right order, or render unstyled. Order is
+ * load-bearing: Tailwind first so `@theme` and `@apply` have a context to
+ * resolve against, the animation and shadcn layers next because the primitives
+ * reference their utilities, and the kit's tokens last so an app can override
+ * any custom property simply by declaring it after this import.
+ */
+
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+
+/*
+ * Tailwind does not scan node_modules, so without this the utility classes used
+ * *inside* the kit's components are treated as unused and purged — the failure
+ * mode is a build that succeeds and an app that renders unstyled. In
+ * kubevirt-manager the stylesheet dropped from 118 KB to 51 KB before this line
+ * was added.
+ *
+ * The path is relative to this file, resolving to the sibling package inside
+ * node_modules. That holds for npm, yarn and pnpm in its default hoisted mode.
+ * Under `node-linker=isolated` pnpm the sibling is not there; such a repo needs
+ * its own `@source` line pointing at the real location.
+ */
+@source '../ui-kit/dist';
+
+@import '@kubermatic/ui-kit/theme.css';

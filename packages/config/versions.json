@@ -1,0 +1,65 @@
+{
+  "$comment": [
+    "The dependency contract for the Kubermatic frontend stack.",
+    "",
+    "Three categories, because they behave differently and conflating them breaks things:",
+    "",
+    "  singletons — carry React context or hook identity. A second copy in one app is an",
+    "    invalid-hook-call or a form that cannot see its own provider. These stay",
+    "    peerDependencies everywhere; what is centralised is the VERSION, applied by each",
+    "    product as `overrides`. npm and pnpm cannot inherit overrides from a dependency,",
+    "    so this file has to be written into each product's package.json — that is what",
+    "    `kubermatic-config check --fix` does, and what the CI check enforces.",
+    "",
+    "  owned — no cross-boundary identity requirement, so ui-kit/ui-patterns take them as",
+    "    direct dependencies and products get them transitively. A product declaring one",
+    "    of these is a drift bug: `check` fails on it.",
+    "",
+    "  toolchain — build-time only, never a runtime import, so it cannot be vendored",
+    "    through a runtime package. Shipped as the configs in this package plus the",
+    "    versions below, applied as devDependencies.",
+    "",
+    "Every version here is one this repo installs and its CI verifies. Versions that",
+    "cannot be grounded that way live in `pending` and make `check` report an unresolved",
+    "decision rather than silently bless a guess."
+  ],
+
+  "singletons": {
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "react-hook-form": "7.80.0",
+    "next-themes": "0.4.6"
+  },
+
+  "toolchain": {
+    "tailwindcss": "4.3.1",
+    "typescript": "5.9.3",
+    "vite": "8.2.2",
+    "vitest": "4.1.11",
+    "eslint": "10.5.0",
+    "prettier": "3.8.4"
+  },
+
+  "owned": [
+    "@base-ui/react",
+    "@tanstack/react-table",
+    "@tanstack/react-virtual",
+    "monaco-editor",
+    "@monaco-editor/react",
+    "monaco-yaml",
+    "class-variance-authority",
+    "clsx",
+    "tailwind-merge",
+    "lucide-react",
+    "js-yaml"
+  ],
+
+  "bannedPaths": ["components.json", "src/components/ui"],
+
+  "pending": {
+    "@tanstack/react-query": "Drifts across products. No version is installed in this repo, so there is nothing here to verify one against. Pin when ui-patterns takes a data-fetching dependency, or when a product owner picks the target.",
+    "@tanstack/react-router": "Used by KubeV and KubeLB, not by KDP, and not installed here. Blocked behind the Tier 2 router adapter — pinning a router version before deciding whether ui-patterns may reference one at all would prejudge that.",
+    "zustand": "Drifts across products. Not installed here.",
+    "typescript@6": "Products split ~5.9.3 vs ~6.0.3. `toolchain.typescript` holds 5.9.3 because that is the compiler this repo builds and typechecks under; 6.x is a major with real breakage and needs a migration, not a manifest edit."
+  }
+}

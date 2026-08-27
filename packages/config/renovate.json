@@ -1,0 +1,53 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": [
+    "Renovate preset for repos on the Kubermatic frontend stack.",
+    "",
+    "Consume with: { \"extends\": [\"@kubermatic/config/renovate\"] }",
+    "",
+    "Two jobs. Group the @kubermatic/* packages so a kit release lands as one PR",
+    "rather than three that each half-update a product. And leave the singletons",
+    "alone: their versions come from versions.json via `kubermatic-config check`,",
+    "so a Renovate PR bumping react past the manifest would be reverted by CI on",
+    "the next run. Bump the manifest instead."
+  ],
+  "extends": ["config:recommended"],
+  "packageRules": [
+    {
+      "description": "One PR for the whole kit.",
+      "matchPackageNames": ["@kubermatic/**"],
+      "groupName": "kubermatic frontend stack",
+      "schedule": ["at any time"]
+    },
+    {
+      "description": "Owned by ui-kit / ui-patterns. A product should not have these at all; if one does, `kubermatic-config check` already fails on it, and a Renovate PR would only keep the copy alive.",
+      "matchPackageNames": [
+        "@base-ui/react",
+        "@tanstack/react-table",
+        "@tanstack/react-virtual",
+        "monaco-editor",
+        "@monaco-editor/react",
+        "monaco-yaml",
+        "class-variance-authority",
+        "clsx",
+        "tailwind-merge",
+        "lucide-react",
+        "js-yaml"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Singletons are pinned by the manifest, not by Renovate.",
+      "matchPackageNames": [
+        "react",
+        "react-dom",
+        "react-hook-form",
+        "next-themes",
+        "@tanstack/react-query",
+        "@tanstack/react-router",
+        "zustand"
+      ],
+      "enabled": false
+    }
+  ]
+}
