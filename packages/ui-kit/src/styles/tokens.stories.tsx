@@ -1,6 +1,24 @@
+/*
+ * Copyright 2026 The Kubermatic ui-kit Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import * as React from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect } from 'storybook/test';
+
+import { COLOR_TOKENS as EXPORTED_TOKENS } from '@/tokens';
 
 /*
  * Catalogue for the token set in `theme.css`.
@@ -8,8 +26,9 @@ import { expect } from 'storybook/test';
  * Values are read back with `getComputedStyle` rather than duplicated from the
  * stylesheet, so what renders here is what the browser actually resolved —
  * including any override a consuming app layers on top of `:root`. The
- * `Coverage` story closes the loop in the other direction and fails when a
- * token is added to `theme.css` without being catalogued here.
+ * `Coverage` story closes the loop in the other direction, and does it across
+ * all three places a token now has to appear: the stylesheet, this catalogue,
+ * and the typed `@kubermatic/ui-kit/tokens` export.
  */
 
 interface TokenGroup {
@@ -335,20 +354,34 @@ export const Layout: Story = {
 
 /**
  * Lists the themeable tokens `theme.css` declares in its `.dark` block against
- * the catalogue above.
+ * the two places that have to agree with it: this catalogue, and the typed
+ * `@kubermatic/ui-kit/tokens` export.
  *
  * `.dark` is the kit's own override block — Tailwind never emits that selector —
  * so it is an unambiguous inventory of what is themeable. Without this check a
  * token added to `theme.css` would simply never appear on this page, and the
  * omission would be invisible. The assertion turns that into a test failure.
+ *
+ * The TS side matters for a second reason. `COLOR_TOKENS` is a published type —
+ * `ColorToken` is the union a consumer's `cssVar()` call is checked against — so
+ * a token missing from it is not merely undocumented, it is unreachable at the
+ * four boundaries that cannot take a class name. A token lingering in it after
+ * leaving the stylesheet is worse: `cssVar` still typechecks and returns a
+ * `var()` reference that resolves to nothing.
  */
 export const Coverage: Story = {
   render: function CoverageReport() {
     const declared = React.useMemo(declaredThemeTokens, []);
     const catalogued = new Set<string>(COLOR_TOKENS);
+    const exported = new Set<string>(EXPORTED_TOKENS);
 
     const missing = declared.filter((token) => !catalogued.has(token));
     const stale = COLOR_TOKENS.filter((token) => !declared.includes(token));
+
+    const notExported = declared.filter((token) => !exported.has(token));
+    const overExported = EXPORTED_TOKENS.filter(
+      (token) => !declared.includes(token),
+    );
 
     return (
       <dl className="space-y-4 text-sm">
@@ -374,17 +407,35 @@ export const Coverage: Story = {
             {stale.length ? stale.join(', ') : 'none'}
           </dd>
         </div>
+        <div>
+          <dt className="text-muted-foreground text-xs">
+            Declared but not exported from /tokens
+          </dt>
+          <dd data-testid="not-exported" className="font-mono">
+            {notExported.length ? notExported.join(', ') : 'none'}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-muted-foreground text-xs">
+            Exported from /tokens but no longer declared
+          </dt>
+          <dd data-testid="over-exported" className="font-mono">
+            {overExported.length ? overExported.join(', ') : 'none'}
+          </dd>
+        </div>
       </dl>
     );
   },
   play: async ({ canvas }) => {
     // A zero here would mean the stylesheet never loaded, which would make the
-    // two assertions below pass vacuously.
+    // assertions below pass vacuously.
     await expect(canvas.getByTestId('declared-count')).not.toHaveTextContent(
       '0',
     );
     await expect(canvas.getByTestId('missing')).toHaveTextContent('none');
     await expect(canvas.getByTestId('stale')).toHaveTextContent('none');
+    await expect(canvas.getByTestId('not-exported')).toHaveTextContent('none');
+    await expect(canvas.getByTestId('over-exported')).toHaveTextContent('none');
   },
 };
 

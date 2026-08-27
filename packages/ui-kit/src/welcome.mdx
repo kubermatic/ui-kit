@@ -70,17 +70,19 @@ import { Button, Badge, Table } from '@kubermatic/ui-kit';
 The build emits one module per component with `preserveModules`, so unused
 primitives tree-shake away.
 
-## Peer dependencies
+## Dependencies
 
-Everything that owns React state or context is a **peer** dependency, not a
-bundled one. A second copy of `react`, `react-hook-form` or `sonner` silently
-breaks context across the package boundary — a `toast()` in the application
-would never reach a `Toaster` rendered from the kit.
+Only the packages that carry React context or hook identity are **peers**. A
+second copy of one of those silently breaks context across the package
+boundary — a form that cannot see its own provider, or an invalid-hook-call.
 
-`react` · `react-dom` · `react-hook-form` · `@base-ui/react` · `lucide-react` ·
-`sonner` · `next-themes` (optional) · `tailwindcss`
+`react` · `react-dom` · `react-hook-form` · `tailwindcss`
 
-Only `clsx`, `class-variance-authority` and `tailwind-merge` are bundled.
+Everything else the kit needs, it owns and installs itself, and consuming apps
+get it transitively:
+
+`@base-ui/react` · `lucide-react` · `class-variance-authority` · `clsx` ·
+`tailwind-merge`
 
 ---
 
@@ -125,10 +127,7 @@ at runtime. Dedupe in both `vite.config.ts` and `vitest.config.ts`:
 
 ```ts
 resolve: {
-  dedupe: [
-    'react', 'react-dom', 'react-hook-form',
-    '@base-ui/react', 'lucide-react', 'sonner', 'next-themes',
-  ],
+  dedupe: ['react', 'react-dom', 'react-hook-form'],
 }
 ```
 

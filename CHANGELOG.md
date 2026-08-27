@@ -5,6 +5,63 @@ All notable changes to `@kubermatic/ui-kit` are recorded here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+Breaking, on the dependency surface rather than the component API. Every
+component keeps its props; what changes is what a consuming app has to install
+and where toasts come from.
+
+### Removed
+
+- **`sonner` is no longer a peer dependency**, and `Toaster` is no longer a
+  wrapper around it. Toasts are built on Base UI's `toast`, which is the engine
+  every other primitive here already uses, so this removes an external package
+  from the boundary rather than adding one.
+
+  Migration: import `toast` from `@kubermatic/ui-kit` instead of from `sonner`,
+  and uninstall `sonner`. The call shapes are unchanged —
+  `toast.success(...)`, `toast.error(title, { description })` and
+  `toast.promise(p, { loading, success, error })` all still work. Two
+  differences worth knowing: `toast.dismiss()` replaces `toast.dismiss` from
+  sonner with the same meaning, and an action is given as
+  `actionProps: { children: 'Retry', onClick }` rather than
+  `action: { label, onClick }`.
+
+- **`next-themes` is no longer a peer dependency.** The sonner wrapper was its
+  only consumer, and `<Toaster />` no longer takes a `theme` prop. Toasts style
+  from the same tokens as everything else and follow the `.dark` class the app
+  already toggles, which works whether or not that app uses next-themes.
+
+### Changed
+
+- **`@base-ui/react` and `lucide-react` moved from peer to direct
+  dependencies.** They carry no cross-boundary identity requirement, so the kit
+  owns them outright and consuming apps get them transitively. Remove both from
+  your `package.json`: keeping a copy re-opens the version split — the products
+  currently span three `lucide-react` majors — and the Base UI engine choice
+  stops being something a product can get wrong. `kubermatic-config check`
+  fails a repo that declares either.
+
+- **Every component now carries `'use client'`** — 25 of the 32 were missing it,
+  along with the `useIsMobile` hook. A Next.js app can import any primitive
+  directly into a server component. Applied to all of them rather than only the
+  ones that use a hook today: the failure is asymmetric (a missing directive is
+  a build error in the consumer, a needless one is a few hundred bytes), and
+  only the blanket form is mechanically enforceable, which it now is via a lint
+  rule.
+
+### Added
+
+- **`@kubermatic/ui-kit/tokens`** — the token set as importable values, for the
+  four rendering boundaries that cannot take a class name: Chart.js datasets,
+  React Flow `style`, Recharts `fill` and CodeMirror's `EditorView.theme()`.
+  `cssVar(name)` returns `var(--name)` and follows the theme; `resolveToken`
+  reads the computed value for canvas, which is the one boundary `var()` does
+  not survive. Its own entry point, so it does not pull the component graph in.
+
+- **Apache-2.0 headers on every source file**, enforced by a lint rule. They
+  were on none of them.
+
 ## [0.2.0]
 
 The exported API is unchanged, so nothing needs editing in a consuming app. Two

@@ -42,17 +42,27 @@ The package is published to GitHub Packages, so consuming repos need an
 @kubermatic:registry=https://npm.pkg.github.com
 ```
 
-### Peer dependencies
+### Dependencies
 
-Everything that owns React state or context is a **peer** dependency, not a
-bundled one — a second copy of `react`, `react-hook-form` or `sonner` silently
-breaks context across the boundary (a `toast()` in the app would never reach a
-`<Toaster />` from the kit).
+Only the packages that carry React context or hook identity are **peers**. A
+second copy of one of those silently breaks context across the boundary — a
+form that cannot see its own provider, or an invalid-hook-call.
 
-`react` · `react-dom` · `react-hook-form` · `@base-ui/react` ·
-`lucide-react` · `sonner` · `next-themes` (optional) · `tailwindcss`
+`react` · `react-dom` · `react-hook-form` · `tailwindcss`
 
-Only `clsx`, `class-variance-authority` and `tailwind-merge` are bundled.
+Everything else the kit needs, it owns and installs itself:
+
+`@base-ui/react` · `lucide-react` · `class-variance-authority` · `clsx` ·
+`tailwind-merge`
+
+Those arrive transitively, so a consuming app should not declare them at all —
+that is what closed the three-way `lucide-react` major split, and it is what
+makes the Base UI engine choice something a product cannot get wrong.
+`kubermatic-config check` fails a repo that adds one back.
+
+`sonner` and `next-themes` are gone. Toasts are built on Base UI now
+(`import { toast, Toaster }` from the kit), and the kit reads no theme library —
+it styles from tokens and follows the `.dark` class the app already toggles.
 
 ## Wiring it up
 
@@ -86,7 +96,34 @@ import { Button, Badge, Table } from '@kubermatic/ui-kit';
 ```
 
 The build emits one module per component with `preserveModules`, so unused
-primitives tree-shake away.
+primitives tree-shake away. Every component carries `'use client'`, so a Next.js
+app can import one directly into a server component.
+
+### Tokens as values
+
+Most of the time a token is best reached through a Tailwind class — `bg-primary`
+resolves through `--primary` and follows the theme for free. But four rendering
+boundaries across the dashboards cannot take a class name at all: Chart.js
+datasets, React Flow `style` objects, Recharts `fill`, and CodeMirror's
+`EditorView.theme()`. Without a supported way to get a value, somebody hardcodes
+`#0f766e` and the token system stops being the source of truth.
+
+```tsx
+import { cssVar, resolveToken, CHART_TOKENS } from '@kubermatic/ui-kit/tokens';
+
+<Bar fill={cssVar('chart-1')} />; // Recharts, React Flow, CodeMirror
+resolveToken('chart-1', chartEl); // Chart.js — canvas cannot resolve var()
+```
+
+Prefer `cssVar`: it emits `var(--chart-1)`, so it follows the `.dark` class
+automatically and nothing has to subscribe to a theme change. `resolveToken`
+reads the computed value and exists for canvas, which is the one boundary
+`var()` does not survive — the value it returns is a snapshot.
+
+Its own entry point, so reaching for a colour does not pull the component graph
+into the bundle. The token list is asserted against `theme.css` by the
+`Foundations/Tokens → Coverage` story, in both directions, so the TypeScript
+union and the stylesheet cannot drift apart.
 
 ## `@kubermatic/config` — the toolchain and the dependency contract
 
@@ -146,10 +183,7 @@ at runtime. Dedupe in both `vite.config.ts` and `vitest.config.ts`:
 
 ```ts
 resolve: {
-  dedupe: [
-    'react', 'react-dom', 'react-hook-form',
-    '@base-ui/react', 'lucide-react', 'sonner', 'next-themes',
-  ],
+  dedupe: ['react', 'react-dom', 'react-hook-form'],
 }
 ```
 

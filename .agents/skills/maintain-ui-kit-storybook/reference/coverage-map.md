@@ -16,7 +16,7 @@ things that cost time once and should not cost it twice.
   `breadcrumb`, `button`, `card`, `collapsible`, `combobox`, `dialog`,
   `dropdown-menu`, `form-combobox`, `form-multi-combobox`, `form`,
   `input-group`, `popover`, `radio-circle`, `radio-group`, `select`,
-  `separator`, `sheet`, `sidebar`, `skeleton`, `sonner`, `table`, `tabs`,
+  `separator`, `sheet`, `sidebar`, `skeleton`, `table`, `tabs`, `toast`,
   `tooltip`
 - **Covered inside `form-controls.stories.tsx` (5)** — `checkbox`, `input`,
   `label`, `switch`, `textarea`

@@ -30,3 +30,10 @@ npm run typecheck
 
 echo "--- lint"
 npm run lint
+
+# The dependency contract. Catches a singleton moved out of peerDependencies, an
+# owned package left as a peer, or a toolchain version drifting from the
+# manifest — all of which are invisible to the type checker and the linter, and
+# all of which surface downstream as somebody else's broken build.
+echo "--- dependency contract"
+npm run check:deps
