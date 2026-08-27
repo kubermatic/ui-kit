@@ -16,6 +16,7 @@
 
 import licenseHeader from './license-header.js';
 import noColorLiterals from './no-color-literals.js';
+import requireUseClient from './require-use-client.js';
 
 /**
  * The rules that have no upstream home.
@@ -30,6 +31,7 @@ export const plugin = {
   rules: {
     'license-header': licenseHeader,
     'no-color-literals': noColorLiterals,
+    'require-use-client': requireUseClient,
   },
 };
 

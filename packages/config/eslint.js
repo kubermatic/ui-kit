@@ -124,11 +124,22 @@ export const base = defineConfig([
 /**
  * For the packages that own the engine — ui-kit and ui-patterns.
  *
- * Identical to `base`. It exists as a named export so the choice to skip the
- * import bans is written down at the call site rather than implied by reaching
- * past the default.
+ * Skips the import bans, since these are the packages allowed to import the
+ * engine directly. Adds the `'use client'` requirement, because everything they
+ * publish is consumed by apps that may render it inside a React Server
+ * Component tree — KDP is on Next 16 — and a primitive without the directive
+ * fails in that consumer's build rather than here.
  */
-export const library = defineConfig([...base]);
+export const library = defineConfig([
+  ...base,
+  {
+    files: ['**/src/components/**/*.tsx', '**/src/hooks/**/*.{ts,tsx}'],
+    ignores: ['**/*.stories.tsx', '**/*.test.{ts,tsx}'],
+    rules: {
+      'kubermatic/require-use-client': 'error',
+    },
+  },
+]);
 
 /**
  * For product repos.

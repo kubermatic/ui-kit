@@ -16,7 +16,10 @@
 
 import type { ESLint } from 'eslint';
 
-/** The rules with no upstream home: `license-header` and `no-color-literals`. */
+/**
+ * The rules with no upstream home: `license-header`, `no-color-literals` and
+ * `require-use-client`.
+ */
 export declare const plugin: ESLint.Plugin;
 
 declare const _default: ESLint.Plugin;

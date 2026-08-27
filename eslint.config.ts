@@ -49,19 +49,4 @@ export default defineConfig([
       'kubermatic/no-color-literals': 'error',
     },
   },
-
-  /*
-   * TODO(phase-2): delete this block.
-   *
-   * The licence-header rule is authored and enforced (see the block above, which
-   * runs it over packages/config). Turning it on for ui-kit's 68 existing files
-   * is Phase 2 work — `eslint --fix` writes every header, but doing it here
-   * would bury the workspace restructure under 68 unrelated file changes.
-   */
-  {
-    files: ['packages/ui-kit/**/*.{ts,tsx}'],
-    rules: {
-      'kubermatic/license-header': 'off',
-    },
-  },
 ]);
