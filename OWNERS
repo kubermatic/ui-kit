@@ -1,0 +1,11 @@
+# See the OWNERS docs: https://git.k8s.io/community/contributors/guide/owners.md
+#
+# This is what the approve and lgtm plugins read. It is not the same thing as
+# .github/CODEOWNERS, which only drives GitHub's review requests — Prow will
+# not merge a PR that has not been approved by someone listed here.
+
+approvers:
+  - frontend-maintainers
+
+reviewers:
+  - frontend-maintainers

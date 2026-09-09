@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 The Kubermatic ui-kit Authors.
+ * Copyright 2026 The Kubermatic Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,38 +13,44 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 'use client';
 
-import { Switch as SwitchPrimitive } from '@base-ui/react';
+import { Switch as BaseSwitch } from '@base-ui/react/switch';
+import type { ComponentProps } from 'react';
 
-import { cn } from '@/lib/utils';
+import { cn } from '../../lib/utils.js';
 
-function Switch({
-  className,
-  size = 'default',
-  ...props
-}: SwitchPrimitive.Root.Props & {
-  size?: 'sm' | 'default';
-}) {
+export interface SwitchProps extends Omit<ComponentProps<typeof BaseSwitch.Root>, 'className'> {
+  className?: string;
+}
+
+/**
+ * Switch — for settings that take effect immediately.
+ *
+ * Both products currently call this a "Toggle", which collides with the
+ * pressed-button sense of the word that `ToggleGroup` uses. A switch changes
+ * state; a toggle button changes a selection. Named for the former.
+ */
+export function Switch({ className, ...props }: SwitchProps) {
   return (
-    <SwitchPrimitive.Root
+    <BaseSwitch.Root
       data-slot="switch"
-      data-size={size}
       className={cn(
-        'peer group/switch focus-visible:border-ring focus-visible:ring-ring/50 data-checked:bg-primary data-unchecked:bg-input dark:data-unchecked:bg-input/80 inline-flex shrink-0 items-center rounded-full border border-transparent shadow-xs transition-all outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-[size=default]:h-[1.15rem] data-[size=default]:w-8 data-[size=sm]:h-3.5 data-[size=sm]:w-6',
+        'peer inline-flex h-5 w-9 shrink-0 items-center rounded-full border border-transparent',
+        'bg-input shadow-xs transition-colors outline-none',
+        'focus-visible:ring-[3px] focus-visible:ring-ring/50',
+        'data-checked:bg-primary',
+        'data-disabled:cursor-not-allowed data-disabled:opacity-50',
         className,
       )}
       {...props}
     >
-      <SwitchPrimitive.Thumb
-        data-slot="switch-thumb"
+      <BaseSwitch.Thumb
         className={cn(
-          'bg-background dark:data-checked:bg-primary-foreground dark:data-unchecked:bg-foreground pointer-events-none block rounded-full ring-0 transition-transform group-data-[size=default]/switch:size-4 group-data-[size=sm]/switch:size-3 data-checked:translate-x-[calc(100%-2px)] data-unchecked:translate-x-0',
+          'pointer-events-none block size-4 rounded-full bg-background shadow-sm ring-0',
+          'transition-transform data-checked:translate-x-4 data-unchecked:translate-x-0.5',
         )}
       />
-    </SwitchPrimitive.Root>
+    </BaseSwitch.Root>
   );
 }
-
-export { Switch };

@@ -1,0 +1,76 @@
+name: Component proposal
+description: Propose a new component, variant or token for the shared kit.
+labels: [proposal]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A component in a shared kit is a permanent commitment for every product
+        that adopts it, and the wrong ones cost far more than the missing ones.
+        Please propose before building — a rejected PR is a worse outcome for
+        everyone than a rejected issue.
+
+  - type: input
+    id: name
+    attributes:
+      label: What you want to add
+      placeholder: 'Tooltip, or: an `xs` size on Button'
+    validations:
+      required: true
+
+  - type: textarea
+    id: consumers
+    attributes:
+      label: Which products need it, and for what
+      description: >
+        Name them. A component with one consumer belongs in that consumer — it
+        has one opinion, and putting it here freezes that opinion for everyone
+        else. Two independent products asking for the same thing is the signal.
+    validations:
+      required: true
+
+  - type: textarea
+    id: today
+    attributes:
+      label: What those products do today
+      description: >
+        Existing local implementations, ideally with links. Divergence between
+        them is the strongest argument for centralising, and the differences
+        usually reveal the API.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: base-ui
+    attributes:
+      label: Does Base UI have the primitive?
+      description: >
+        If it does, we style that rather than reimplement its keyboard and ARIA
+        behaviour — the part that is easy to get subtly wrong and hard to
+        notice.
+      options:
+        - 'Yes — link it below'
+        - 'No, and it needs interaction behaviour we would have to write'
+        - 'No, but it is presentational only'
+    validations:
+      required: true
+
+  - type: textarea
+    id: tokens
+    attributes:
+      label: Does it need a new colour role?
+      description: >
+        Ideally no — it composes from existing roles. If it does need one, that
+        is the larger part of this change: a new role needs a value in *both*
+        palettes, an entry in `tokens.ts`, and every pair it takes part in
+        measured against WCAG AA.
+      placeholder: 'No — composes from surface/foreground and border.'
+    validations:
+      required: true
+
+  - type: textarea
+    id: api
+    attributes:
+      label: Proposed API
+      description: Props and variants, as a sketch. Enough to argue about.
+      render: tsx

@@ -1,24 +1,23 @@
-/*
- * Storybook-only stylesheet.
- *
- * Mirrors what a consuming app is expected to set up, but against source rather
- * than dist: `@kubermatic/config/tailwind` is the one-line version products use
- * and it points `@source` at the built package, which does not exist while
- * Storybook is running off the working tree.
- *
- * `@source` points Tailwind at the component sources so the utility classes used
- * inside them survive the content scan.
- */
-
 @import 'tailwindcss';
-@import 'tw-animate-css';
-@import 'shadcn/tailwind.css';
 
+/* Brand fonts, self-hosted via Fontsource so the catalogue renders offline
+ * and identically in CI. Ubuntu Bold for headlines; Roboto 400/700 for
+ * sublines and general text. */
+@import '@fontsource/ubuntu/700.css';
+@import '@fontsource/roboto/400.css';
+@import '@fontsource/roboto/700.css';
+
+/* Tailwind v4 scans for utilities; point it at the sources explicitly so
+ * classes used inside the library are generated for the Storybook build.
+ *
+ * `./docs` is here for the same reason: the MDX pages use utilities that
+ * appear nowhere else, and a class Tailwind never sees is a class it never
+ * emits — the page renders with the markup intact and no styling at all. */
 @source '../packages/ui-kit/src';
+@source './docs';
 
 @import '../packages/ui-kit/src/styles/theme.css';
 
-body {
-  @apply bg-background text-foreground;
-  font-family: 'Inter', sans-serif;
-}
+/* Storybook opts into the base layer so the canvas carries the kit's own
+ * background and typeface. Consuming apps choose this for themselves. */
+@import '../packages/ui-kit/src/styles/preflight.css';

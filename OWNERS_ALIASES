@@ -1,0 +1,9 @@
+# Aliases used by the OWNERS files in this repository.
+#
+# OWNERS cannot reference a GitHub team (@kubermatic/frontend), so the
+# membership is spelled out here and has to be kept in step with the team by
+# hand. Add the rest of the frontend team as the kit gains maintainers.
+
+aliases:
+  frontend-maintainers:
+    - mstruebing

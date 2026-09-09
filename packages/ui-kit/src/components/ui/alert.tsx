@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 The Kubermatic ui-kit Authors.
+ * Copyright 2026 The Kubermatic Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,86 +13,121 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 'use client';
 
-import { cn } from '@/lib/utils';
 import { cva, type VariantProps } from 'class-variance-authority';
-import * as React from 'react';
+import { AlertTriangle, CheckCircle2, Info, XCircle } from 'lucide-react';
+import type { ComponentProps, ReactNode } from 'react';
 
-const alertVariants = cva(
-  'grid w-full grid-cols-[auto_1fr] items-start gap-x-3 rounded-lg border p-4 [&>svg]:mt-0.5 [&>svg]:size-4 [&>:not(svg)]:col-start-2',
+import { cn } from '../../lib/utils.js';
+
+export type AlertTone = 'info' | 'success' | 'warning' | 'error';
+
+/**
+ * Outlined, not tinted — the same constraint `StatusBadge` documents. A pale
+ * wash means an opacity composite, and a composite is a colour outside the
+ * token set whose contrast nothing measures. So the tone is carried by the
+ * border and the icon, both of which are measured against `--background`, and
+ * the body text stays `--foreground`.
+ *
+ * The upside is that the message itself is always at 18.9:1 rather than at
+ * whatever a tint left it.
+ */
+export const alertVariants = cva(
+  [
+    'relative grid w-full gap-x-3 gap-y-1 rounded-md border-2 bg-background px-4 py-3',
+    'font-sans text-sm text-foreground',
+    'has-[[data-slot=alert-icon]]:grid-cols-[auto_1fr] has-[[data-slot=alert-icon]]:items-start',
+  ],
   {
     variants: {
-      variant: {
-        default: 'bg-card text-card-foreground [&>svg]:text-foreground',
-        error:
-          'border-destructive/30 bg-destructive/10 text-error-foreground [&>svg]:text-error-foreground',
-        info: 'border-info/30 bg-info/10 text-info-soft [&>svg]:text-info-soft',
-        success:
-          'border-success/30 bg-success/10 text-success-soft [&>svg]:text-success-soft',
-        warning:
-          'border-warning/30 bg-warning/10 text-warning-soft [&>svg]:text-warning-soft',
+      tone: {
+        info: 'border-primary [&_[data-slot=alert-icon]]:text-primary',
+        success: 'border-success [&_[data-slot=alert-icon]]:text-success',
+        warning: 'border-warning [&_[data-slot=alert-icon]]:text-warning',
+        error: 'border-destructive [&_[data-slot=alert-icon]]:text-destructive',
       },
     },
-    defaultVariants: {
-      variant: 'default',
-    },
+    defaultVariants: { tone: 'info' },
   },
 );
 
-function Alert({
+const defaultIcon = {
+  info: Info,
+  success: CheckCircle2,
+  warning: AlertTriangle,
+  error: XCircle,
+} as const satisfies Record<AlertTone, unknown>;
+
+export interface AlertProps
+  extends Omit<ComponentProps<'div'>, 'title'>, VariantProps<typeof alertVariants> {
+  /** Bold first line. */
+  title?: ReactNode;
+  /** Replaces the tone's default icon. `null` removes it. */
+  icon?: ReactNode;
+  /** Right-aligned slot — a "Retry" or "Dismiss" button. */
+  action?: ReactNode;
+}
+
+/**
+ * Alert — an inline message about the page, not about a field.
+ *
+ * `role="alert"` on the error and warning tones only. `alert` is an assertive
+ * live region: it interrupts the screen reader mid-sentence, which is correct
+ * for "Saving failed" and rude for "Your changes were saved". The quiet tones
+ * get `role="status"`.
+ *
+ * Both products render their error banner with no role at all, so a failure
+ * that appears after an async call is never announced — a screen reader user
+ * presses Save and hears nothing.
+ */
+export function Alert({
   className,
-  variant,
-  ref,
+  tone = 'info',
+  title,
+  icon,
+  action,
+  children,
   ...props
-}: React.HTMLAttributes<HTMLDivElement> &
-  VariantProps<typeof alertVariants> & {
-    ref?: React.Ref<HTMLDivElement>;
-  }) {
+}: AlertProps) {
+  const Icon = defaultIcon[tone ?? 'info'];
+  const resolvedIcon = icon === undefined ? <Icon /> : icon;
+
   return (
     <div
-      ref={ref}
       data-slot="alert"
-      role="alert"
-      className={cn(alertVariants({ variant }), className)}
+      role={tone === 'error' || tone === 'warning' ? 'alert' : 'status'}
+      className={cn(alertVariants({ tone }), className)}
       {...props}
-    />
+    >
+      {resolvedIcon ? (
+        <span
+          data-slot="alert-icon"
+          aria-hidden="true"
+          className="row-span-2 flex items-center pt-0.5 [&_svg]:size-4"
+        >
+          {resolvedIcon}
+        </span>
+      ) : null}
+
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        {title ? (
+          <div data-slot="alert-title" className="leading-none font-semibold">
+            {title}
+          </div>
+        ) : null}
+        {children ? (
+          <div data-slot="alert-description" className="text-sm [&_p]:leading-relaxed">
+            {children}
+          </div>
+        ) : null}
+      </div>
+
+      {action ? (
+        <div data-slot="alert-action" className="flex shrink-0 items-start">
+          {action}
+        </div>
+      ) : null}
+    </div>
   );
 }
-
-function AlertTitle({
-  className,
-  ref,
-  ...props
-}: React.HTMLAttributes<HTMLHeadingElement> & {
-  ref?: React.Ref<HTMLParagraphElement>;
-}) {
-  return (
-    <h5
-      ref={ref}
-      data-slot="alert-title"
-      className={cn('mb-1 leading-none font-medium tracking-tight', className)}
-      {...props}
-    />
-  );
-}
-
-function AlertDescription({
-  className,
-  ref,
-  ...props
-}: React.HTMLAttributes<HTMLParagraphElement> & {
-  ref?: React.Ref<HTMLParagraphElement>;
-}) {
-  return (
-    <div
-      ref={ref}
-      data-slot="alert-description"
-      className={cn('text-sm [&_p]:leading-relaxed', className)}
-      {...props}
-    />
-  );
-}
-
-export { Alert, AlertTitle, AlertDescription, alertVariants };

@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 The Kubermatic ui-kit Authors.
+ * Copyright 2026 The Kubermatic Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,98 +13,69 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
-import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import dts from 'vite-plugin-dts';
-import path from 'node:path';
-import { createRequire } from 'node:module';
+import { defineConfig } from 'vite';
 
-const require = createRequire(import.meta.url);
-const pkg = require('./package.json');
+const pkg = JSON.parse(readFileSync(resolve(import.meta.dirname, 'package.json'), 'utf8')) as {
+  dependencies?: Record<string, string>;
+  peerDependencies?: Record<string, string>;
+};
 
 /**
- * Library build.
- *
- * `preserveModules` keeps one output file per source module so consuming apps
- * can tree-shake unused primitives instead of pulling the whole kit.
- *
- * Externals are derived from the manifest rather than listed by hand. The hand
- * list had already gone stale twice over — it still named `sonner` and
- * `next-themes` after both left the package — and a stale external list fails
- * in the least obvious way available: the dependency is silently bundled, the
- * app ends up with two copies, and the symptom is a context that mysteriously
- * does not reach across the boundary.
- *
- * Both dependency kinds are externalised, for different reasons:
- *
- *   - peerDependencies are the singletons. Two copies of React or
- *     react-hook-form in one app is an invalid-hook-call, or a form that cannot
- *     see its own provider.
- *   - dependencies are the packages the kit owns outright. They carry no
- *     cross-boundary identity requirement, but bundling them would still be
- *     wrong: `@base-ui/react` is the engine every primitive is built on and has
- *     internal context of its own, and inlining `lucide-react` would defeat the
- *     per-icon tree-shaking that makes it cheap. Consumers resolve them from
- *     node_modules, transitively, which is the point of owning them.
+ * Everything declared as a dependency stays external. Bundling them would
+ * ship a second copy of Base UI to any consumer that already uses it, which
+ * breaks provider identity the same way a duplicate React does.
  */
-const external = [
+const externalPackages = [
   ...Object.keys(pkg.dependencies ?? {}),
   ...Object.keys(pkg.peerDependencies ?? {}),
-].map(
-  (name) => new RegExp(`^${name.replace(/[/\\^$*+?.()|[\]{}]/g, '\\$&')}(/|$)`),
-);
+];
 
+const isExternal = (id: string) =>
+  externalPackages.some((dep) => id === dep || id.startsWith(`${dep}/`));
+
+// Library build: ESM only. Declarations are emitted separately by
+// `tsc -p tsconfig.build.json`.
+//
+// `theme.css` is deliberately NOT bundled — it carries Tailwind v4 at-rules
+// (`@theme inline`, `@custom-variant`) that must reach the consumer's Tailwind
+// compiler verbatim, so the build copies it instead.
 export default defineConfig({
-  plugins: [
-    react(),
-    dts({
-      tsconfigPath: './tsconfig.build.json',
-      include: ['src'],
-      exclude: [
-        'src/**/*.test.tsx',
-        'src/**/*.test.ts',
-        'src/**/*.stories.tsx',
-      ],
-    }),
-  ],
+  plugins: [react()],
   resolve: {
-    alias: { '@': path.resolve(import.meta.dirname, './src') },
+    alias: { '@': resolve(import.meta.dirname, 'src') },
   },
   build: {
     lib: {
-      entry: {
-        index: path.resolve(import.meta.dirname, 'src/index.ts'),
-        /*
-         * Tokens ship as their own entry point. Four rendering boundaries across
-         * the products cannot take a class name — Chart.js datasets, React Flow
-         * `style`, Recharts `fill`, CodeMirror's `EditorView.theme()` — so the
-         * values have to be importable, and a consumer reaching for them should
-         * not have to pull the component graph in to get them.
-         */
-        /*
-         * Keyed 'tokens/index', not 'tokens'. `entryFileNames: '[name].js'`
-         * writes the key verbatim, so the shorter name emits dist/tokens.js
-         * while vite-plugin-dts mirrors the source tree and emits
-         * dist/tokens/index.d.ts — types and implementation land in different
-         * places and the subpath fails to resolve for consumers only.
-         */
-        'tokens/index': path.resolve(
-          import.meta.dirname,
-          'src/tokens/index.ts',
-        ),
-      },
+      entry: [
+        resolve(import.meta.dirname, 'src/index.ts'),
+        // A second entry so `@kubermatic/ui-kit/icons` is emitted. With
+        // `preserveModules`, a module no other module imports is not reached
+        // from the root entry and would simply not appear in dist/.
+        resolve(import.meta.dirname, 'src/icons.ts'),
+      ],
       formats: ['es'],
     },
     rollupOptions: {
-      external,
+      external: isExternal,
       output: {
+        /*
+         * One output file per source file, rather than a single bundle.
+         *
+         * Rollup drops module-level directives when it merges modules, which
+         * silently strips every `'use client'` — and a React Server Component
+         * importing the bundle then fails on the first hook it sees. Preserving
+         * modules keeps each directive attached to its own file, and leaves
+         * server-safe modules like `lib/utils` free of a client boundary.
+         */
         preserveModules: true,
         preserveModulesRoot: 'src',
         entryFileNames: '[name].js',
       },
     },
     sourcemap: true,
-    minify: false,
   },
 });

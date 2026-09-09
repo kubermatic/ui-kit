@@ -1,199 +1,213 @@
 /*
- * @kubermatic/ui-kit — design tokens and primitive base styles.
+ * @kubermatic/ui-kit — brand tokens.
  *
- * Consuming apps import this AFTER `@import 'tailwindcss'` so the `@theme`
- * mappings and `@apply` rules resolve against the app's Tailwind context:
+ * Consuming apps import this AFTER Tailwind so the `@theme` mappings resolve
+ * against the app's Tailwind context:
  *
  *   @import 'tailwindcss';
  *   @import '@kubermatic/ui-kit/theme.css';
  *
- * Apps may override any `:root` / `.dark` custom property after this import
- * to re-brand without forking the components.
+ * Two layers, deliberately:
+ *
+ *   --brand-*   the marketing palette, exactly as specified. Reference only.
+ *   everything else   semantic roles. Components use ONLY these.
+ *
+ * Components never reference `--brand-*` directly. That indirection is what
+ * lets a role point at an accessibility-corrected value (see `--primary`)
+ * without the brand palette drifting from the source document.
+ *
+ * This sheet declares tokens ONLY. It deliberately sets no `body` or
+ * element styles: importing tokens should not restyle a consumer's page.
+ * The opt-in base layer lives in `@kubermatic/ui-kit/preflight.css`.
+ *
+ * Every foreground/background pair below is measured against WCAG 2.2 AA
+ * (4.5:1 text, 3:1 non-text). The ratio is recorded next to each role; the
+ * Foundations/Colors story renders each pair so `npm run test:a11y` re-checks
+ * them on every run.
  */
 
 @custom-variant dark (&:is(.dark *));
 
+:root {
+  /* ---------------------------------------------------------------- brand
+   * The marketing palette verbatim. CMYK values from the source document are
+   * print specifications and have no screen equivalent, so only the hex
+   * values are represented here.
+   */
+  --brand-teal: #00d9d2; /* highlights, graphic elements       */
+  --brand-rose: #ff7399; /* highlights                         */
+  --brand-honey: #ffad05; /* highlights                         */
+  --brand-cerulean: #0081ae; /* buttons, links, in-text highlights */
+  --brand-aegean: #00517d; /* headlines                          */
+  --brand-dark-azure: #001128; /* background                         */
+  --brand-maroon: #801919; /* negatives, warnings                */
+
+  /* ------------------------------------------------------------ typography */
+  --font-display: 'Ubuntu', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Roboto', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Code', 'Source Code Pro', monospace;
+
+  --radius: 0.5rem;
+
+  /* ------------------------------------------------------- semantic: light */
+  --background: #ffffff;
+  --foreground: var(--brand-dark-azure); /* 18.90:1 on background */
+
+  /* Headlines are Aegean per the brand document. */
+  --heading: var(--brand-aegean); /*  8.49:1 on background */
+
+  --muted: #eef4fc; /* Dark Azure hue, 3.5% chroma */
+  --muted-foreground: #696e74; /*  4.65:1 on muted, 5.14:1 on background */
+
+  --border: #8e939a; /*  3.09:1 on background — meets SC 1.4.11 */
+  --input: #8e939a;
+
+  /*
+   * Brand Cerulean is #0081AE, which measures 4.42:1 on white — 0.08 short of
+   * the 4.5:1 text minimum, and it fails identically as a button surface under
+   * white text. The role is therefore darkened by 0.012 OKLCH lightness to
+   * #007DAA (4.65:1). The shift is 3 hex units and visually indistinguishable;
+   * `--brand-cerulean` above keeps the exact specified value for non-text use,
+   * where the threshold is 3:1 and #0081AE passes.
+   */
+  --primary: #007daa; /*  4.65:1 under white text */
+  --primary-foreground: #ffffff;
+
+  --secondary: #eef4fc;
+  --secondary-foreground: var(--brand-dark-azure); /* 17.09:1 on secondary */
+
+  /*
+   * Teal, Rosé and Honey measure 1.77:1, 2.57:1 and 1.87:1 against white, so
+   * they cannot carry text or draw a functional border on a light background.
+   * They are exposed as SURFACES with Dark Azure on top, which is where they
+   * are legible and where the brand document actually puts them.
+   */
+  --accent: var(--brand-teal);
+  --accent-foreground: var(--brand-dark-azure); /* 10.67:1 on accent */
+
+  --highlight-rose: var(--brand-rose);
+  --highlight-rose-foreground: var(--brand-dark-azure); /*  7.35:1 */
+
+  --highlight-honey: var(--brand-honey);
+  --highlight-honey-foreground: var(--brand-dark-azure); /* 10.11:1 */
+
+  --destructive: var(--brand-maroon);
+  --destructive-foreground: #ffffff; /* 10.14:1 on destructive */
+
+  /*
+   * Status. Not in the brand document — it specifies Maroon for negatives but
+   * nothing for "this reconciled" or "this is degraded", and both products
+   * need all three. Brand-adjacent rather than invented: `success` sits in the
+   * Teal family and `warning` is Honey darkened.
+   *
+   * Darkened here because the light versions cannot be seen on white. Honey
+   * measures 1.87:1 against it, which fails even the 3:1 non-text threshold —
+   * so an Honey status dot on a light page is both invisible and
+   * non-compliant. These values carry text, which also makes them legal as
+   * the 3:1 graphic a dot is.
+   */
+  --success: #0e7350; /*  5.85:1 on background */
+  --success-foreground: #ffffff;
+
+  --warning: #8a5300; /*  6.33:1 on background */
+  --warning-foreground: #ffffff;
+
+  --ring: #007daa; /*  4.65:1 on background */
+}
+
+.dark {
+  --background: var(--brand-dark-azure);
+  --foreground: #ffffff; /* 18.90:1 on background */
+
+  /* Aegean is 2.23:1 on Dark Azure and unusable. Lightened to keep headlines
+   * blue rather than switching them to a different brand colour. */
+  --heading: #4183b2; /*  4.60:1 on background */
+
+  --muted: #232f3d;
+  --muted-foreground: #92989e; /*  4.66:1 on muted, 6.49:1 on background */
+
+  --border: #566373; /*  3.09:1 on background */
+  --input: #566373;
+
+  /* Lightened Cerulean, carrying Dark Azure text rather than white. */
+  --primary: #1287b4; /*  4.64:1 under Dark Azure text, 4.64:1 vs background */
+  --primary-foreground: var(--brand-dark-azure);
+
+  --secondary: #232f3d;
+  --secondary-foreground: #ffffff; /* 13.59:1 on secondary */
+
+  /* The highlight trio is at its best on dark: 10.67, 7.35 and 10.11 to the
+   * background, so here they may also carry text. */
+  --accent: var(--brand-teal);
+  --accent-foreground: var(--brand-dark-azure); /* 10.67:1 on accent */
+
+  --highlight-rose: var(--brand-rose);
+  --highlight-rose-foreground: var(--brand-dark-azure);
+
+  --highlight-honey: var(--brand-honey);
+  --highlight-honey-foreground: var(--brand-dark-azure);
+
+  /* Maroon is 1.86:1 on Dark Azure; lightened so warnings stay readable. */
+  --destructive: #c85d55; /*  4.64:1 vs background */
+  --destructive-foreground: var(--brand-dark-azure); /*  4.64:1 on destructive */
+
+  /* On Dark Azure the status pair needs no correction: Honey is at its best
+   * here, and `success` moves into the Teal family it belongs to. */
+  --success: #00d9a0; /* 10.29:1 on background */
+  --success-foreground: var(--brand-dark-azure);
+
+  --warning: var(--brand-honey); /* 10.11:1 on background */
+  --warning-foreground: var(--brand-dark-azure);
+
+  /* Teal rather than Cerulean: a focus ring is a graphic element, and Teal
+   * gives 10.67:1 here against Cerulean's 4.64:1. */
+  --ring: var(--brand-teal);
+}
+
+/*
+ * `inline` resolves the var() at use site, which is what lets a `.dark`
+ * ancestor re-point `bg-primary` without regenerating utilities.
+ */
 @theme inline {
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
-  --radius-3xl: calc(var(--radius) + 12px);
-  --radius-4xl: calc(var(--radius) + 16px);
+  --font-display: var(--font-display);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
+  --color-heading: var(--heading);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-highlight-rose: var(--highlight-rose);
+  --color-highlight-rose-foreground: var(--highlight-rose-foreground);
+  --color-highlight-honey: var(--highlight-honey);
+  --color-highlight-honey-foreground: var(--highlight-honey-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-body: var(--body);
-  --color-warning: var(--warning);
-  --color-warning-foreground: var(--warning-foreground);
-  --color-warning-soft: var(--warning-soft);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
-  --color-success-soft: var(--success-soft);
-  --color-info: var(--info);
-  --color-info-foreground: var(--info-foreground);
-  --color-info-soft: var(--info-soft);
-  --color-error-foreground: var(--error-foreground);
-  --spacing-header: var(--header-height);
-  --spacing-footer: var(--footer-height);
-  --height-content: calc(100vh - 130px);
-  --min-height-content: calc(100vh - 130px);
-}
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
 
-:root {
-  --radius: 0.4rem;
-  --header-height: 64px;
-  --footer-height: 64px;
-  --background: oklch(0.9773 0.0012 232.8);
-  --foreground: oklch(0.1616 0.0271 230.1);
-  --card: oklch(0.9811 0.001 233.2);
-  --card-foreground: oklch(0.1616 0.0271 230.1);
-  --popover: oklch(0.9811 0.001 233.2);
-  --popover-foreground: oklch(0.1616 0.0271 230.1);
-  --primary: oklch(0.4232 0.1004 242);
-  --primary-foreground: oklch(0.9848 0.0001 263.3);
-  --secondary: oklch(0.52 0.12 195);
-  --secondary-foreground: oklch(0.9848 0.0001 263.3);
-  --muted: oklch(0.9684 0.0069 248.1);
-  /* Lightness is contrast-bound, not aesthetic: this token carries every
-     description, hint and secondary table cell in the kit, and at its previous
-     0.5547 it measured 4.47:1 on --background and 4.34:1 on --muted, both under
-     the 4.5:1 WCAG AA floor. 0.54 clears all three surfaces it is used on
-     (--background 4.74, --muted 4.60, --card 4.78) with hue and chroma
-     untouched. Foundations/Contrast measures this; do not raise it back. */
-  --muted-foreground: oklch(0.54 0.0408 257.5);
-  --accent: oklch(0.9684 0.0069 248.1);
-  --accent-foreground: oklch(0.2079 0.0399 265.7);
-  --destructive: oklch(0.58 0.2 25);
-  --destructive-foreground: oklch(0.9848 0.0001 263.3);
-  --border: oklch(0.9035 0.0049 286);
-  --input: oklch(0.9035 0.0049 286);
-  --ring: oklch(0.4232 0.1004 242);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.9773 0.0012 232.8);
-  --sidebar-foreground: oklch(0.1616 0.0271 230.1);
-  --sidebar-primary: oklch(0.4232 0.1004 242);
-  --sidebar-primary-foreground: oklch(0.9848 0.0001 263.3);
-  --sidebar-accent: oklch(0.92 0.025 237);
-  --sidebar-accent-foreground: oklch(0.35 0.09 237);
-  --sidebar-border: oklch(0.9035 0.0049 286);
-  --sidebar-ring: oklch(0.4232 0.1004 242);
-  --body: oklch(0.9544 0.0024 231.8);
-  --warning: oklch(0.55 0.16 71);
-  --warning-foreground: oklch(0.9848 0.0001 263.3);
-  /* Warning text and icons drawn on the page background rather than on
-     --warning; the dark theme has to lighten it to stay legible. */
-  /* The `-soft` trio is drawn as *text on the page background* (inside a 10%
-     tint of its own solid counterpart), not on that counterpart, so each needs
-     its own contrast rather than inheriting the solid token's. All three are
-     tuned to clear 4.5:1 against that tint; Foundations/Contrast measures it. */
-  --warning-soft: oklch(0.52 0.16 71);
-  --success: oklch(0.52 0.16 147);
-  --success-soft: oklch(0.49 0.16 147);
-  --success-foreground: oklch(0.9848 0.0001 263.3);
-  --info: oklch(0.6 0.2 263);
-  --info-soft: oklch(0.52 0.16 263);
-  --info-foreground: oklch(0.1 0.04 263);
-  --error-foreground: oklch(0.4 0.16 25.3);
-}
+  /* Brand values, for the rare graphic element that must be exact. */
+  --color-brand-teal: var(--brand-teal);
+  --color-brand-rose: var(--brand-rose);
+  --color-brand-honey: var(--brand-honey);
+  --color-brand-cerulean: var(--brand-cerulean);
+  --color-brand-aegean: var(--brand-aegean);
+  --color-brand-dark-azure: var(--brand-dark-azure);
+  --color-brand-maroon: var(--brand-maroon);
 
-.dark {
-  --background: oklch(0.17 0.0028 231.1);
-  --foreground: oklch(0.9848 0.0001 263.3);
-  --card: oklch(0.216 0.0043 231.1);
-  --card-foreground: oklch(0.9848 0.0001 263.3);
-  --popover: oklch(0.216 0.0043 231.1);
-  --popover-foreground: oklch(0.9848 0.0001 263.3);
-  --primary: oklch(0.5371 0.1301 243.1);
-  --primary-foreground: oklch(0.9848 0.0001 263.3);
-  --secondary: oklch(0.5 0.1 195);
-  --secondary-foreground: oklch(0.9848 0.0001 263.3);
-  --muted: oklch(0.28 0.037 260);
-  --muted-foreground: oklch(0.7107 0.0351 256.8);
-  --accent: oklch(0.28 0.037 260);
-  --accent-foreground: oklch(0.9838 0.0036 248.2);
-  --destructive: oklch(0.55 0.16 25);
-  --destructive-foreground: oklch(0.9848 0.0001 263.3);
-  --border: oklch(0.2598 0.0051 285.9);
-  --input: oklch(0.2598 0.0051 285.9);
-  --ring: oklch(0.5371 0.1301 243.1);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.1933 0.0036 231.1);
-  --sidebar-foreground: oklch(0.9848 0.0001 263.3);
-  --sidebar-primary: oklch(0.5371 0.1301 243.1);
-  --sidebar-primary-foreground: oklch(0.9848 0.0001 263.3);
-  --sidebar-accent: oklch(0.3 0.05 237);
-  --sidebar-accent-foreground: oklch(0.95 0.01 237);
-  --sidebar-border: oklch(0.2598 0.0051 285.9);
-  --sidebar-ring: oklch(0.5371 0.1301 243.1);
-  --body: oklch(0.1473 0.004 230.7);
-  --warning: oklch(0.55 0.14 72);
-  --warning-foreground: oklch(0.9848 0.0001 263.3);
-  --warning-soft: oklch(0.75 0.15 72);
-  --success: oklch(0.54 0.14 149);
-  --success-soft: oklch(0.75 0.16 149);
-  --success-foreground: oklch(0.9848 0.0001 263.3);
-  --info: oklch(0.53 0.15 255);
-  --info-soft: oklch(0.75 0.16 255);
-  --info-foreground: oklch(0.9848 0.0001 263.3);
-  --error-foreground: oklch(0.8 0.1 25.7);
-}
-
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-
-  button:not(:disabled),
-  [role='button']:not(:disabled) {
-    cursor: pointer;
-  }
-
-  [data-sidebar='menu-button'][data-active='true'] {
-    position: relative;
-    border-left: 3px solid var(--sidebar-primary);
-    padding-left: calc(0.5rem - 3px);
-  }
-
-  [data-collapsible='icon'] [data-sidebar='menu-button'][data-active='true'] {
-    border-left: none;
-  }
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 The Kubermatic ui-kit Authors.
+ * Copyright 2026 The Kubermatic Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,97 +13,49 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
-import { Card, CardContent, CardFooter, CardHeader } from './card';
-import { Skeleton } from './skeleton';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from './table';
+import { Skeleton, SkeletonText } from './skeleton';
 
 const meta = {
   title: 'Primitives/Skeleton',
   component: Skeleton,
-  parameters: { layout: 'padded' },
+  parameters: {
+    docs: {
+      description: {
+        component:
+          'A loading placeholder, painted with the `muted` role so it works in both ' +
+          'palettes. It announces nothing on its own: a page full of skeletons would ' +
+          'report a dozen busy regions, so put one `aria-busy` on the area that is ' +
+          'loading instead — which is what the templates in this kit do.',
+      },
+    },
+  },
 } satisfies Meta<typeof Skeleton>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/**
- * A lone box is close to worthless to review — `animate-pulse` on a rounded
- * `bg-accent` is the whole component. What is worth reviewing is whether a
- * skeleton *layout* matches the shape of the content that replaces it, which is
- * what the two stories below show.
- */
-export const Playground: Story = {
-  render: () => <Skeleton className="h-4 w-48" />,
+export const Default: Story = {
+  render: () => <Skeleton className="h-6 w-48" />,
 };
 
-/**
- * Compare against `Primitives/Table → Playground`: the column widths and the
- * row height should line up, or the table visibly jolts when the data lands.
- */
-export const TableLoading: Story = {
+/** The short last line is what makes it read as a paragraph. */
+export const Text: Story = {
+  render: () => <SkeletonText lines={4} className="w-96" />,
+};
+
+export const CardPlaceholder: Story = {
   render: () => (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Name</TableHead>
-          <TableHead>Node</TableHead>
-          <TableHead className="text-right">vCPU</TableHead>
-          <TableHead>Status</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {Array.from({ length: 4 }, (_, row) => (
-          <TableRow key={row}>
-            <TableCell>
-              <Skeleton className="h-4 w-40" />
-            </TableCell>
-            <TableCell>
-              <Skeleton className="h-4 w-24" />
-            </TableCell>
-            <TableCell className="flex justify-end">
-              <Skeleton className="h-4 w-6" />
-            </TableCell>
-            <TableCell>
-              <Skeleton className="h-5 w-20 rounded-full" />
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+    <div className="w-96 rounded-lg border border-border p-6">
+      <Skeleton className="mb-4 h-5 w-1/3" />
+      <SkeletonText lines={3} />
+    </div>
   ),
 };
 
-/** The card equivalent — mirrors `Primitives/Card → Playground`. */
-export const CardLoading: Story = {
-  parameters: { layout: 'centered' },
-  render: () => (
-    <Card className="w-96">
-      <CardHeader>
-        <Skeleton className="h-5 w-44" />
-        <Skeleton className="h-4 w-56" />
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-2 gap-y-3">
-          <Skeleton className="h-4 w-16" />
-          <Skeleton className="h-4 w-24" />
-          <Skeleton className="h-4 w-16" />
-          <Skeleton className="h-4 w-28" />
-        </div>
-      </CardContent>
-      <CardFooter className="gap-2">
-        <Skeleton className="h-8 w-24" />
-        <Skeleton className="h-8 w-24" />
-      </CardFooter>
-    </Card>
-  ),
+export const CardPlaceholderDark: Story = {
+  globals: { theme: 'dark' },
+  tags: ['!autodocs'],
+  render: CardPlaceholder.render,
 };

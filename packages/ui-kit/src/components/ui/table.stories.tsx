@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 The Kubermatic ui-kit Authors.
+ * Copyright 2026 The Kubermatic Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,10 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
-import { Badge } from './badge';
 import {
   Table,
   TableBody,
@@ -26,24 +24,25 @@ import {
   TableHeader,
   TableRow,
 } from './table';
-
-const ROWS = [
-  { name: 'web-frontend-01', node: 'worker-03', cpu: '4', status: 'Running' },
-  { name: 'db-primary', node: 'worker-01', cpu: '8', status: 'Running' },
-  { name: 'batch-worker-07', node: 'worker-05', cpu: '2', status: 'Stopped' },
-  { name: 'cache-redis', node: 'worker-02', cpu: '2', status: 'Failed' },
-] as const;
-
-const STATUS_VARIANT = {
-  Running: 'success',
-  Stopped: 'secondary',
-  Failed: 'destructive',
-} as const;
+import { StatusBadge } from './status-badge';
 
 const meta = {
-  title: 'Primitives/Table',
+  title: 'Data/Table',
   component: Table,
-  parameters: { layout: 'padded' },
+  parameters: {
+    docs: {
+      description: {
+        component:
+          'The semantic table elements, styled. A real `<table>`, not a grid of divs: row ' +
+          'and column headers are what let a screen reader announce "Status, Degraded" ' +
+          'instead of "Degraded", and there is no ARIA that reproduces that as well as the ' +
+          'element does.\n\n' +
+          'For a resource list, reach for `DataTable` instead — it adds search, sorting, ' +
+          'column visibility, selection and the loading/empty/error states. These parts are ' +
+          'for a table you are laying out by hand.',
+      },
+    },
+  },
 } satisfies Meta<typeof Table>;
 
 export default meta;
@@ -51,51 +50,37 @@ type Story = StoryObj<typeof meta>;
 
 export const Playground: Story = {
   render: () => (
-    <Table>
-      <TableCaption>Virtual machines in namespace `default`.</TableCaption>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Name</TableHead>
-          <TableHead>Node</TableHead>
-          <TableHead className="text-right">vCPU</TableHead>
-          <TableHead>Status</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {ROWS.map((row) => (
-          <TableRow key={row.name}>
-            <TableCell className="font-medium">{row.name}</TableCell>
-            <TableCell className="text-muted-foreground">{row.node}</TableCell>
-            <TableCell className="text-right tabular-nums">{row.cpu}</TableCell>
+    <div className="w-[40rem]">
+      <Table>
+        <TableCaption>External secrets in the billing namespace.</TableCaption>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Store</TableHead>
+            <TableHead>Status</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableRow>
+            <TableCell>db-credentials</TableCell>
+            <TableCell>vault-backend</TableCell>
             <TableCell>
-              <Badge variant={STATUS_VARIANT[row.status]}>{row.status}</Badge>
+              <StatusBadge tone="success" dot>
+                Synced
+              </StatusBadge>
             </TableCell>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-  ),
-};
-
-export const Empty: Story = {
-  render: () => (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Name</TableHead>
-          <TableHead>Status</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        <TableRow>
-          <TableCell
-            colSpan={2}
-            className="text-muted-foreground h-24 text-center"
-          >
-            No virtual machines found.
-          </TableCell>
-        </TableRow>
-      </TableBody>
-    </Table>
+          <TableRow>
+            <TableCell>api-token</TableCell>
+            <TableCell>aws-secretsmanager</TableCell>
+            <TableCell>
+              <StatusBadge tone="error" dot>
+                Error
+              </StatusBadge>
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
+    </div>
   ),
 };

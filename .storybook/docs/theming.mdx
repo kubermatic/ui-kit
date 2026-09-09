@@ -1,0 +1,160 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Guides/Theming" />
+
+# Theming
+
+Several products share this kit, and they do not all want the same palette.
+This page is how you change one without forking anything.
+
+See it working in [Foundations → Custom Theme](./?path=/docs/foundations-custom-theme--docs),
+which renders the same markup twice under two palettes.
+
+## How it works
+
+Three layers, and the middle one is what makes the rest possible.
+
+**1. Components only ever reference semantic roles.** `Button` is
+`bg-primary text-primary-foreground`. No component in the kit contains a
+literal colour, and the `kubermatic/no-color-literals` lint rule is what keeps
+it that way.
+
+**2. `@theme inline` compiles those utilities straight to the variable.**
+Tailwind emits:
+
+```css
+.bg-primary {
+  background-color: var(--primary);
+}
+```
+
+Note what is _absent_: no `--color-primary: var(--primary)` indirection.
+Without `inline`, `--color-primary` would be computed once on `:root` and
+inherited as a fixed value, and overriding `--primary` further down the tree
+would do nothing at all. Because the utility resolves `var(--primary)` **at the
+element**, re-pointing a role on any ancestor restyles everything beneath it.
+
+**3. `.dark` re-points the roles.** `theme.css` declares each role twice, once
+on `:root` and once under `.dark`. Dark mode is not a second set of components
+or a second set of utilities — it is the same utilities reading different
+values.
+
+That is also why a theme can be scoped to a subtree rather than the page: the
+class and the variables both land on an element you choose.
+
+## Build time — override in CSS
+
+Best when a product has one fixed palette. Override the properties after
+importing the sheet:
+
+```css
+@import 'tailwindcss';
+@import '@kubermatic/ui-kit/theme.css';
+
+:root {
+  --primary: #6d28d9;
+  --primary-foreground: #ffffff;
+  --radius: 1rem;
+}
+
+.dark {
+  --primary: #a78bfa;
+  --primary-foreground: #17132a;
+}
+```
+
+## Runtime — the `tokens` prop
+
+Best when the palette is per-tenant, user-chosen, or fetched. `ThemeProvider`
+writes the values as inline custom properties on the theme root:
+
+```tsx
+import { ThemeProvider, type ThemeOverrides } from '@kubermatic/ui-kit';
+
+const tenant: ThemeOverrides = {
+  light: { primary: '#6d28d9', heading: '#5b21b6', radius: '1rem' },
+  dark: { primary: '#a78bfa', 'primary-foreground': '#17132a' },
+};
+
+<ThemeProvider tokens={tenant}>
+  <App />
+</ThemeProvider>;
+```
+
+`ThemeTokens` is typed to the semantic roles, so `primary` autocompletes and
+`primrey` is a compile error. The `--brand-*` reference palette is deliberately
+**not** overridable — those are the source document's values, and a role that
+needs to differ from them should differ at the role, not at the reference.
+
+Overrides are a **patch, not a replacement**. Supply only `primary` and every
+other role keeps its brand value; supply only `light` and the dark palette is
+untouched. Roles are removed again when they change or when the provider
+unmounts, so nothing lingers on the element.
+
+## Theming a subtree
+
+Combine `tokens` with `getThemeRoot` — a getter rather than an element, so the
+lookup happens inside the effect once refs are attached:
+
+```tsx
+function TenantPreview({ tokens, children }) {
+  const ref = useRef(null);
+  const getThemeRoot = useCallback(() => ref.current, []);
+
+  return (
+    <div ref={ref}>
+      <ThemeProvider tokens={tokens} getThemeRoot={getThemeRoot} storageKey={null}>
+        {children}
+      </ThemeProvider>
+    </div>
+  );
+}
+```
+
+`storageKey={null}` because a preview pane should not overwrite the user's
+actual preference. That is exactly how this Storybook themes the story canvas
+without touching its own chrome.
+
+## A custom palette leaves the verified set
+
+Every built-in pair is measured against WCAG 2.2 AA, and CI recomputes all of
+them from `theme.css` on every run. **Nothing measures yours.** `tokens` will
+accept a primary at 3.6:1 without complaint, and it will look fine to whoever
+picked it.
+
+So the same check is exported. Point it at the element your theme is mounted
+on:
+
+```tsx
+import { auditThemeContrast } from '@kubermatic/ui-kit';
+
+it('the tenant palette meets AA', () => {
+  render(<ThemeProvider tokens={tenant}>…</ThemeProvider>);
+  expect(auditThemeContrast(document.documentElement).failures).toEqual([]);
+});
+```
+
+It reads the roles as computed custom properties, so it sees the effective
+palette — built-in values, CSS overrides and runtime tokens together — and
+measures the same pairs the kit's own suite does. It needs a real layout, so
+run it in a browser environment rather than jsdom if you want it to reflect
+what users see.
+
+Two things it deliberately will not do:
+
+- **Guess at translucency.** `bg-primary/10` composites against whatever is
+  behind it, so it has no contrast of its own. Those pairs come back under
+  `unmeasured` rather than being given an invented number.
+- **Check pairs you invented.** It measures the roles in `CONTRAST_PAIRS`. A
+  colour combination your product makes up outside the token set is yours to
+  measure.
+
+## Which roles exist
+
+The full list, with what each is for and its measured ratio in both palettes,
+is in [Foundations → Colors](./?path=/docs/foundations-colors--docs). The
+values on that page are read from the live stylesheet rather than typed in, so
+it cannot go stale.
+
+`CONTRAST_PAIRS` and `COLOR_ROLES` are exported if you want to drive a theme
+editor or a settings UI from them.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 The Kubermatic ui-kit Authors.
+ * Copyright 2026 The Kubermatic Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,29 +15,23 @@
  */
 
 /**
- * Turns a variant set into the array a story's `argTypes` and render both read.
+ * Makes a story's variant coverage complete by construction.
  *
- * The point is the parameter type. `Record<T, true>` cannot be satisfied by an
- * object literal that is missing one of `T`'s members, so a variant added to a
- * component's `cva` config and not added to its story fails `npm run typecheck`
- * instead of quietly going unrendered. An extra or misspelled key fails the
- * same way, through the excess-property check.
+ * `Record<T, true>` cannot be satisfied by an object literal missing a member
+ * of `T`, and excess-property checking rejects a misspelled or removed one.
+ * So a variant added to a component's `cva` config but not to its story fails
+ * `npm run typecheck` rather than quietly going unrendered — and unrendered
+ * means unscanned by axe and unreviewed on a palette change.
  *
- * Passing the union explicitly is what arms it — inference would widen `T` to
- * whatever keys happen to be present and prove nothing:
+ * Two constraints make this the only workable form:
  *
- * ```ts
- * type ButtonVariant = NonNullable<VariantProps<typeof buttonVariants>['variant']>;
- * const VARIANTS = variantKeys<ButtonVariant>({ default: true, secondary: true });
- * //                          ^ errors until every ButtonVariant is listed
- * ```
- *
- * The values carry no meaning; the keys are the data. A plain `as const` array
- * would read better but cannot be checked for completeness, and the matrix
- * falling silently behind the component is the failure this exists to prevent —
- * `badge` had shipped `ghost` and `link` variants that no story rendered.
- *
- * Stories only. Nothing here is exported from the package.
+ * 1. **Pass the union explicitly** — `variantKeys<ButtonVariant>({ … })`.
+ *    Letting it infer widens `T` to whatever keys are present, which proves
+ *    nothing at all.
+ * 2. **Consume the result.** The tempting alternative is an exhaustiveness
+ *    check via `Exclude`, but an unused const or type alias trips
+ *    `noUnusedLocals` (TS6133) *before* the interesting error surfaces. The
+ *    guard has to be something the story genuinely renders.
  */
 export function variantKeys<T extends string>(set: Record<T, true>): T[] {
   return Object.keys(set) as T[];

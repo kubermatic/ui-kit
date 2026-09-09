@@ -1,0 +1,27 @@
+/*
+ * @kubermatic/ui-kit — opt-in base layer.
+ *
+ * Separate from `theme.css` on purpose. Importing design tokens should not
+ * take over a consuming app's page, and an app that already sets its own body
+ * background or typeface (a Next.js app injecting a font via `next/font`, for
+ * instance) would otherwise have it silently overridden depending on import
+ * order.
+ *
+ * Import it only if you want the kit to own these defaults:
+ *
+ *   @import 'tailwindcss';
+ *   @import '@kubermatic/ui-kit/theme.css';
+ *   @import '@kubermatic/ui-kit/preflight.css';
+ */
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+  }
+}

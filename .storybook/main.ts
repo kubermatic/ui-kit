@@ -1,72 +1,92 @@
 /*
- * Copyright 2026 The Kubermatic ui-kit Authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+Copyright 2026 The Kubermatic Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+import { resolve } from 'node:path';
 
 import type { StorybookConfig } from '@storybook/react-vite';
-import tailwindcss from '@tailwindcss/vite';
-import path from 'node:path';
+import remarkGfm from 'remark-gfm';
 
 const config: StorybookConfig = {
-  /*
-   * Both packages, one catalogue. The glob is package-agnostic on purpose:
-   * adding packages/ui-patterns should not also require editing this file.
-   */
   stories: [
-    '../packages/*/src/**/*.mdx',
-    '../packages/*/src/**/*.stories.@(js|jsx|mjs|ts|tsx)',
+    // Prose pages. First in the list so they are first in the sidebar before
+    // `storySort` even runs.
+    './docs/**/*.mdx',
+    // Every package, so adding one needs no change here.
+    '../packages/*/src/**/*.stories.@(ts|tsx)',
   ],
   addons: [
-    '@chromatic-com/storybook',
-    '@storybook/addon-vitest',
-    '@storybook/addon-a11y',
-    '@storybook/addon-docs',
-  ],
-  framework: '@storybook/react-vite',
-  /*
-   * There is no vite.config.ts at the workspace root — the only one lives in
-   * packages/ui-kit and is a *library* build (lib mode plus vite-plugin-dts),
-   * neither of which belongs in a Storybook build. Storybook resolves its config
-   * from the root, so it never picks that up.
-   *
-   * What it does mean is that the two things the library config used to supply
-   * have to be supplied here: Tailwind, and the `@` alias the components import
-   * `@/lib/utils` through.
-   */
-  viteFinal: async (config) => {
-    // Cast before flattening: Vite's recursive plugin type makes `flat()`
-    // blow TypeScript's instantiation depth limit (TS2589).
-    const plugins = ((config.plugins ?? []) as unknown[]).flat(
-      Infinity,
-    ) as Array<{ name?: string } | null | undefined>;
-
-    const kept = plugins.filter(
-      (plugin) => !plugin?.name?.startsWith('vite:dts'),
-    );
-
-    config.plugins = [...kept, tailwindcss()] as typeof config.plugins;
-
-    config.resolve = {
-      ...config.resolve,
-      alias: {
-        ...config.resolve?.alias,
-        '@': path.resolve(import.meta.dirname, '../packages/ui-kit/src'),
+    {
+      name: '@storybook/addon-docs',
+      options: {
+        /*
+         * Storybook's MDX pipeline is CommonMark, not GitHub-flavoured
+         * Markdown. Without this, a pipe table renders as a paragraph of
+         * literal pipes — no error, no warning, just prose that looks like
+         * someone pasted a table into a chat window. Same for strikethrough,
+         * task lists and bare-URL autolinks.
+         *
+         * It matters here because the prose pages lean on tables: the failure
+         * modes in Installation, the WCAG 2.2 criteria in Accessibility, the
+         * enforced-rules list in Contributing.
+         */
+        mdxPluginOptions: {
+          mdxCompileOptions: { remarkPlugins: [remarkGfm] },
+        },
       },
+    },
+    '@storybook/addon-a11y',
+    '@storybook/addon-vitest',
+  ],
+  framework: {
+    name: '@storybook/react-vite',
+    options: {},
+  },
+  core: {
+    // This catalogue is built in CI on every push. Nothing about it needs
+    // reporting to a third party, and a build should not make network calls
+    // it does not need.
+    disableTelemetry: true,
+  },
+  typescript: {
+    // Generate prop tables from the TS types rather than PropTypes.
+    reactDocgen: 'react-docgen-typescript',
+  },
+  /*
+   * A deployed catalogue is not always at the root of its origin — a static
+   * host may serve it from `/<something>/`. Storybook reads this at build time
+   * to write correct asset URLs; without a matching base every asset URL is
+   * absolute-from-root and the page loads blank.
+   *
+   * hack/ci/publish-catalogue.sh sets it to `/ui-kit/`, which is where Pages
+   * serves a project site from. Local and CI builds leave it unset and are
+   * served from an origin root.
+   */
+  viteFinal: async (viteConfig) => {
+    const { default: tailwindcss } = await import('@tailwindcss/vite');
+    viteConfig.plugins ??= [];
+    viteConfig.plugins.push(tailwindcss());
+    viteConfig.resolve ??= {};
+    viteConfig.resolve.alias = {
+      ...viteConfig.resolve.alias,
+      '@': resolve(import.meta.dirname, '../packages/ui-kit/src'),
     };
-
-    if (config.build) delete config.build.lib;
-    return config;
+    if (process.env.STORYBOOK_BASE_PATH) {
+      viteConfig.base = process.env.STORYBOOK_BASE_PATH;
+    }
+    return viteConfig;
   },
 };
+
 export default config;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 The Kubermatic ui-kit Authors.
+ * Copyright 2026 The Kubermatic Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,181 +13,105 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, screen } from 'storybook/test';
+import { useState } from 'react';
 
-import { Label } from './label';
 import {
+  FilterSelect,
   Select,
   SelectContent,
   SelectGroup,
+  SelectGroupLabel,
   SelectItem,
-  SelectLabel,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from './select';
 
-/*
- * `items` is what lets `<SelectValue>` render a label instead of the raw value.
- * Without it the trigger would show `csi-rbd` even when the list renders a
- * friendlier string, which is the usual reason a Select looks half-wired.
- */
-const STORAGE_CLASSES: Record<string, string> = {
-  'csi-rbd': 'csi-rbd (block, default)',
-  'csi-cephfs': 'csi-cephfs (shared filesystem)',
-  'local-path': 'local-path (node-local)',
-};
-
 const meta = {
-  title: 'Primitives/Select',
+  title: 'Forms/Select',
   component: Select,
-  parameters: { layout: 'centered' },
+  parameters: {
+    docs: {
+      description: {
+        component:
+          'Exposed as parts rather than a single configured component, because the two ' +
+          'products need genuinely different item rendering — one puts a role description ' +
+          'in each row, the other puts a connection-status dot after the cluster name. ' +
+          'A single `options` prop would have grown a `renderOption` escape hatch within ' +
+          'a week.\n\n' +
+          'For the common toolbar case — a flat list filtering a table — use ' +
+          '`FilterSelect`, which *is* that configured component and says so.',
+      },
+    },
+  },
 } satisfies Meta<typeof Select>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/**
- * Visually close to `Combobox`, but deliberately not filterable — there is no
- * text input, only a listbox. Reach for `Combobox` once the option count stops
- * fitting on a screen.
- */
 export const Playground: Story = {
   render: () => (
-    <div className="grid w-64 gap-2">
-      <Label htmlFor="select-storage-class">Storage class</Label>
-      <Select items={STORAGE_CLASSES}>
-        <SelectTrigger id="select-storage-class" className="w-full">
-          <SelectValue placeholder="Select a storage class" />
+    <div className="w-64">
+      <Select defaultValue="billing">
+        <SelectTrigger aria-label="Namespace">
+          <SelectValue placeholder="All namespaces" />
         </SelectTrigger>
         <SelectContent>
-          {Object.entries(STORAGE_CLASSES).map(([value, label]) => (
-            <SelectItem key={value} value={value}>
-              {label}
-            </SelectItem>
-          ))}
+          <SelectItem value="billing">billing</SelectItem>
+          <SelectItem value="ingress">ingress</SelectItem>
+          <SelectItem value="kube-system">kube-system</SelectItem>
         </SelectContent>
       </Select>
     </div>
   ),
 };
 
-export const Open: Story = {
+export const Grouped: Story = {
   render: () => (
-    <Select items={STORAGE_CLASSES} defaultValue="csi-rbd" defaultOpen>
-      <SelectTrigger className="w-64" aria-label="Storage class">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        {Object.entries(STORAGE_CLASSES).map(([value, label]) => (
-          <SelectItem key={value} value={value}>
-            {label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <div className="w-64">
+      <Select>
+        <SelectTrigger aria-label="Namespace">
+          <SelectValue placeholder="Pick a namespace" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectGroup>
+            <SelectGroupLabel>Workloads</SelectGroupLabel>
+            <SelectItem value="billing">billing</SelectItem>
+            <SelectItem value="checkout">checkout</SelectItem>
+          </SelectGroup>
+          <SelectSeparator />
+          <SelectGroup>
+            <SelectGroupLabel>System</SelectGroupLabel>
+            <SelectItem value="kube-system">kube-system</SelectItem>
+          </SelectGroup>
+        </SelectContent>
+      </Select>
+    </div>
   ),
-  play: async () => {
-    const listbox = await screen.findByRole('listbox');
-    await expect(listbox).toBeInTheDocument();
-    await expect(
-      screen.getByRole('option', { name: /csi-cephfs/i }),
-    ).toBeInTheDocument();
+};
+
+/**
+ * The inline label is *associated* with the control, not merely adjacent —
+ * otherwise a toolbar of four filters announces "All, All, Synced, All" with
+ * no way to tell which is which.
+ */
+export const Filter: Story = {
+  render: function FilterStory() {
+    const [status, setStatus] = useState('All');
+    return (
+      <FilterSelect
+        label="Status"
+        value={status}
+        onValueChange={setStatus}
+        options={['All', 'Synced', 'Degraded', 'Error']}
+      />
+    );
   },
 };
 
-/**
- * Grouped options — the shape a node picker takes.
- *
- * No `SelectSeparator` between the groups, deliberately. The popup's list is a
- * `role="listbox"`, which ARIA allows to contain only options and groups, so a
- * `role="separator"` child makes the whole listbox invalid
- * (`aria-required-children`) and axe fails the story. `SelectLabel` already
- * gives each group a visible boundary, which is what the separator was for.
- *
- * `SelectSeparator` is still exported for menus and other non-listbox popups —
- * it is the combination with a listbox that is wrong, not the component.
- */
-export const Groups: Story = {
-  render: () => (
-    <Select defaultOpen>
-      <SelectTrigger className="w-64" aria-label="Node">
-        <SelectValue placeholder="Select a node" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectGroup>
-          <SelectLabel>Control plane</SelectLabel>
-          <SelectItem value="control-plane-01">control-plane-01</SelectItem>
-        </SelectGroup>
-        <SelectGroup>
-          <SelectLabel>Workers</SelectLabel>
-          <SelectItem value="worker-01">worker-01</SelectItem>
-          <SelectItem value="worker-02">worker-02</SelectItem>
-          <SelectItem value="worker-03">worker-03</SelectItem>
-          <SelectItem value="worker-04" disabled>
-            worker-04 (cordoned)
-          </SelectItem>
-        </SelectGroup>
-      </SelectContent>
-    </Select>
-  ),
-};
-
-/** `size` changes the trigger height only; the popup is unaffected. */
-export const Sizes: Story = {
-  render: () => (
-    <div className="flex items-center gap-3">
-      {(['sm', 'default'] as const).map((size) => (
-        <Select key={size} items={STORAGE_CLASSES} defaultValue="csi-rbd">
-          <SelectTrigger size={size} className="w-56" aria-label={size}>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {Object.entries(STORAGE_CLASSES).map(([value, label]) => (
-              <SelectItem key={value} value={value}>
-                {label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      ))}
-    </div>
-  ),
-};
-
-export const States: Story = {
-  render: () => (
-    <div className="flex flex-col gap-4">
-      <Select items={STORAGE_CLASSES} defaultValue="csi-rbd" disabled>
-        <SelectTrigger className="w-64" aria-label="Storage class (disabled)">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {Object.entries(STORAGE_CLASSES).map(([value, label]) => (
-            <SelectItem key={value} value={value}>
-              {label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <Select items={STORAGE_CLASSES}>
-        <SelectTrigger
-          className="w-64"
-          aria-invalid
-          aria-label="Storage class (invalid)"
-        >
-          <SelectValue placeholder="Required" />
-        </SelectTrigger>
-        <SelectContent>
-          {Object.entries(STORAGE_CLASSES).map(([value, label]) => (
-            <SelectItem key={value} value={value}>
-              {label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
-  ),
+export const FilterDark: Story = {
+  globals: { theme: 'dark' },
+  tags: ['!autodocs'],
+  render: Filter.render,
 };

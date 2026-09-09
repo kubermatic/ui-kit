@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 The Kubermatic ui-kit Authors.
+ * Copyright 2026 The Kubermatic Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,10 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
-import { Badge } from './badge';
 import { Button } from './button';
 import {
   Card,
@@ -29,9 +27,23 @@ import {
 } from './card';
 
 const meta = {
-  title: 'Primitives/Card',
+  title: 'Data/Card',
   component: Card,
-  parameters: { layout: 'centered' },
+  parameters: {
+    docs: {
+      description: {
+        component:
+          'The bordered surface. Compound parts rather than `title`/`actions` props, so ' +
+          'migrating an existing `components/ui/card` usage is a change of import ' +
+          'specifier and nothing else. The `<Card title subtitle actions>` shape ' +
+          'is a *page section*, not a surface, and it is `Section` in the templates layer — ' +
+          'keeping them apart is what stops this component growing a header it renders ' +
+          'sometimes.\n\n' +
+          '`bg-background` with a hairline, not `bg-muted`: a card on a page is the same ' +
+          'plane as the page, and `muted` is for a well *inside* one.',
+      },
+    },
+  },
 } satisfies Meta<typeof Card>;
 
 export default meta;
@@ -41,38 +53,28 @@ export const Playground: Story = {
   render: () => (
     <Card className="w-96">
       <CardHeader>
-        <CardTitle>web-frontend-01</CardTitle>
-        <CardDescription>Ubuntu 24.04 · 4 vCPU · 8 GiB</CardDescription>
+        <CardTitle>db-credentials</CardTitle>
+        <CardDescription>Synced 2 minutes ago from Vault.</CardDescription>
         <CardAction>
-          <Badge variant="success">Running</Badge>
+          <Button variant="outline" size="sm">
+            Edit
+          </Button>
         </CardAction>
       </CardHeader>
-      <CardContent>
-        <dl className="grid grid-cols-2 gap-y-2 text-sm">
-          <dt className="text-muted-foreground">Node</dt>
-          <dd>worker-03</dd>
-          <dt className="text-muted-foreground">IP</dt>
-          <dd className="font-mono text-xs">10.244.2.17</dd>
-        </dl>
+      <CardContent className="font-sans text-sm text-muted-foreground">
+        Two keys, refreshed hourly.
       </CardContent>
-      <CardFooter className="gap-2">
-        <Button size="sm">Console</Button>
-        <Button size="sm" variant="outline">
-          Restart
+      <CardFooter className="border-t border-border pt-6">
+        <Button variant="ghost" size="sm">
+          View manifest
         </Button>
       </CardFooter>
     </Card>
   ),
 };
 
-/** `CardAction` is slotted into the header grid — it does not need positioning. */
-export const HeaderOnly: Story = {
-  render: () => (
-    <Card className="w-96">
-      <CardHeader>
-        <CardTitle>Storage profile</CardTitle>
-        <CardDescription>ceph-rbd (default)</CardDescription>
-      </CardHeader>
-    </Card>
-  ),
+export const PlaygroundDark: Story = {
+  globals: { theme: 'dark' },
+  tags: ['!autodocs'],
+  render: Playground.render,
 };

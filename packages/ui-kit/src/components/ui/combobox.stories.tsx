@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 The Kubermatic ui-kit Authors.
+ * Copyright 2026 The Kubermatic Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,235 +13,95 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-import * as React from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, screen } from 'storybook/test';
+import { Server } from 'lucide-react';
+import { useState } from 'react';
 
-import {
-  Combobox,
-  ComboboxChip,
-  ComboboxChips,
-  ComboboxChipsInput,
-  ComboboxContent,
-  ComboboxEmpty,
-  ComboboxInput,
-  ComboboxItem,
-  ComboboxList,
-  ComboboxValue,
-  useComboboxAnchor,
-} from './combobox';
-import { Label } from './label';
+import { Combobox } from './combobox';
+import { StatusDot } from './status-badge';
 
-const STORAGE_CLASSES = [
-  'csi-rbd',
-  'csi-cephfs',
-  'local-path',
-  'ceph-rbd',
-] as const;
+const CLUSTERS = ['prod-eu-1', 'prod-us-1', 'staging', 'dev-sandbox'];
 
-const NODES = [
-  'worker-01',
-  'worker-02',
-  'worker-03',
-  'worker-04',
-  'worker-05',
-] as const;
+const STATUS: Record<string, 'success' | 'error' | 'neutral'> = {
+  'prod-eu-1': 'success',
+  'prod-us-1': 'success',
+  staging: 'error',
+  'dev-sandbox': 'neutral',
+};
 
 const meta = {
-  title: 'Primitives/Combobox',
+  title: 'Forms/Combobox',
   component: Combobox,
-  parameters: { layout: 'centered' },
+  parameters: {
+    docs: {
+      description: {
+        component:
+          'A searchable single-select. Configured rather than exposed as parts, unlike ' +
+          '`Select`: the compound form is twenty-odd parts and every use across both ' +
+          'products is the same shape — type to filter a flat list of names, pick one.\n\n' +
+          'Filtering is Base UI\'s, which matches with `Intl.Collator` — so "uber" finds ' +
+          '"über" and the comparison is not a `toLowerCase().includes()` that gets accents ' +
+          'and Turkish dotless i wrong.',
+      },
+    },
+  },
+  args: { options: CLUSTERS, value: null, onValueChange: () => {} },
 } satisfies Meta<typeof Combobox>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/**
- * The unstyled parts. For the option shape these dashboards actually use —
- * groups, hints, and the select-on-focus behaviour that keeps typing from
- * appending to the selected label — see `Primitives/Form combobox`, which wraps
- * these same parts.
- *
- * Unlike `Select`, the trigger is a text input: the list filters as you type.
- */
 export const Playground: Story = {
-  render: function SingleSelect() {
-    const container = React.useRef<HTMLDivElement>(null);
-
+  render: function PlaygroundStory() {
+    const [value, setValue] = useState<string | null>('staging');
     return (
-      <div className="grid w-72 gap-2">
-        <Label htmlFor="combobox-storage-class">Storage class</Label>
-        <div ref={container} className="relative">
-          <Combobox items={[...STORAGE_CLASSES]}>
-            <ComboboxInput
-              id="combobox-storage-class"
-              placeholder="Select storage class"
-              className="w-full"
-            />
-            <ComboboxContent container={container}>
-              <ComboboxEmpty>No storage classes found.</ComboboxEmpty>
-              <ComboboxList>
-                {(item: string) => (
-                  <ComboboxItem key={item} value={item}>
-                    <span className="truncate">{item}</span>
-                  </ComboboxItem>
-                )}
-              </ComboboxList>
-            </ComboboxContent>
-          </Combobox>
-        </div>
+      <div className="w-72">
+        <Combobox
+          options={CLUSTERS}
+          value={value}
+          onValueChange={setValue}
+          clearable
+          aria-label="Cluster"
+        />
       </div>
     );
-  },
-};
-
-export const Open: Story = {
-  render: function OpenList() {
-    const container = React.useRef<HTMLDivElement>(null);
-
-    return (
-      <div ref={container} className="relative w-72">
-        <Combobox items={[...STORAGE_CLASSES]} defaultOpen>
-          <ComboboxInput
-            placeholder="Select storage class"
-            className="w-full"
-          />
-          <ComboboxContent container={container}>
-            <ComboboxEmpty>No storage classes found.</ComboboxEmpty>
-            <ComboboxList>
-              {(item: string) => (
-                <ComboboxItem key={item} value={item}>
-                  <span className="truncate">{item}</span>
-                </ComboboxItem>
-              )}
-            </ComboboxList>
-          </ComboboxContent>
-        </Combobox>
-      </div>
-    );
-  },
-  play: async () => {
-    // `screen`, not `canvas` — the popup portals outside the story root.
-    await expect(
-      await screen.findByRole('option', { name: 'csi-cephfs' }),
-    ).toBeInTheDocument();
   },
 };
 
 /**
- * `multiple` swaps the single input for a chip field. The design question this
- * story exists to answer is what happens as the selection grows — the chips
- * wrap and the field grows with them rather than scrolling horizontally.
+ * `renderItem` decorates the list without changing what the input displays —
+ * which is exactly what a cluster picker needs.
  */
-export const Multiple: Story = {
-  render: function MultiSelect() {
-    const anchor = useComboboxAnchor();
-    const container = React.useRef<HTMLDivElement>(null);
-    const [value, setValue] = React.useState<string[]>([
-      'worker-01',
-      'worker-03',
-    ]);
-
+export const WithStatus: Story = {
+  render: function WithStatusStory() {
+    const [value, setValue] = useState<string | null>(null);
     return (
-      <div ref={container} className="relative w-72">
+      <div className="w-72">
         <Combobox
-          multiple
-          autoHighlight
-          items={[...NODES]}
+          options={CLUSTERS}
           value={value}
           onValueChange={setValue}
-        >
-          <ComboboxChips ref={anchor}>
-            <ComboboxValue>
-              {value.map((node) => (
-                <ComboboxChip key={node}>{node}</ComboboxChip>
-              ))}
-              <ComboboxChipsInput
-                aria-label="Select nodes"
-                placeholder={value.length === 0 ? 'Select nodes' : undefined}
+          placeholder="All clusters"
+          aria-label="Cluster"
+          startAdornment={<Server />}
+          renderItem={(item) => (
+            <>
+              <span className="truncate">{item.label}</span>
+              <StatusDot
+                tone={STATUS[item.value] ?? 'neutral'}
+                label={STATUS[item.value] === 'success' ? 'Connected' : 'Disconnected'}
+                className="ml-auto"
               />
-            </ComboboxValue>
-          </ComboboxChips>
-          <ComboboxContent anchor={anchor} container={container}>
-            <ComboboxEmpty>No nodes found.</ComboboxEmpty>
-            <ComboboxList>
-              {(item: string) => (
-                <ComboboxItem key={item} value={item}>
-                  <span className="truncate">{item}</span>
-                </ComboboxItem>
-              )}
-            </ComboboxList>
-          </ComboboxContent>
-        </Combobox>
+            </>
+          )}
+        />
       </div>
     );
   },
 };
 
-/** Every node already selected — the overflow case, at five chips. */
-export const MultipleOverflow: Story = {
-  render: function MultiSelectFull() {
-    const anchor = useComboboxAnchor();
-    const container = React.useRef<HTMLDivElement>(null);
-    const [value, setValue] = React.useState<string[]>([...NODES]);
-
-    return (
-      <div ref={container} className="relative w-72">
-        <Combobox
-          multiple
-          items={[...NODES]}
-          value={value}
-          onValueChange={setValue}
-        >
-          <ComboboxChips ref={anchor}>
-            <ComboboxValue>
-              {value.map((node) => (
-                <ComboboxChip key={node}>{node}</ComboboxChip>
-              ))}
-              <ComboboxChipsInput aria-label="Select nodes" />
-            </ComboboxValue>
-          </ComboboxChips>
-          <ComboboxContent anchor={anchor} container={container}>
-            <ComboboxEmpty>No nodes found.</ComboboxEmpty>
-            <ComboboxList>
-              {(item: string) => (
-                <ComboboxItem key={item} value={item}>
-                  <span className="truncate">{item}</span>
-                </ComboboxItem>
-              )}
-            </ComboboxList>
-          </ComboboxContent>
-        </Combobox>
-      </div>
-    );
-  },
-};
-
-/** `ComboboxEmpty` only renders once the list has filtered down to nothing. */
-export const NoResults: Story = {
-  render: function EmptyList() {
-    const container = React.useRef<HTMLDivElement>(null);
-
-    return (
-      <div ref={container} className="relative w-72">
-        <Combobox items={[] as string[]} defaultOpen>
-          <ComboboxInput
-            placeholder="Select storage class"
-            className="w-full"
-          />
-          <ComboboxContent container={container}>
-            <ComboboxEmpty>No storage classes found.</ComboboxEmpty>
-            <ComboboxList>
-              {(item: string) => (
-                <ComboboxItem key={item} value={item}>
-                  <span className="truncate">{item}</span>
-                </ComboboxItem>
-              )}
-            </ComboboxList>
-          </ComboboxContent>
-        </Combobox>
-      </div>
-    );
-  },
+export const WithStatusDark: Story = {
+  globals: { theme: 'dark' },
+  tags: ['!autodocs'],
+  render: WithStatus.render,
 };

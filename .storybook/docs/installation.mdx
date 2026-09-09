@@ -1,0 +1,138 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Guides/Installation" />
+
+# Installation
+
+## 1. Point the scope at the registry
+
+The package is published to GitHub Packages, not the public npm registry, so
+the `@kubermatic` scope needs redirecting:
+
+```ini
+# .npmrc
+@kubermatic:registry=https://npm.pkg.github.com
+```
+
+GitHub Packages requires authentication even for reads. In CI, `GITHUB_TOKEN`
+is enough; locally, a personal access token with `read:packages`.
+
+```bash
+npm install @kubermatic/ui-kit
+```
+
+Peer dependencies you must already have: `react` and `react-dom` (^19), and
+`tailwindcss` (^4.3).
+
+## 2. Import the stylesheets
+
+Order matters. Tailwind first, then the tokens:
+
+```css
+@import 'tailwindcss';
+@import '@kubermatic/ui-kit/theme.css';
+```
+
+`theme.css` does two things. It declares the tokens, and it carries an
+`@source` directive pointing at the package's compiled components.
+
+**Do not strip that directive.** Tailwind v4 does not scan `node_modules`, so
+without it your build generates none of the utility classes the components
+reference — `bg-primary`, `inline-flex`, `h-9` — and every component renders as
+unstyled markup. It looks like a broken install rather than a missing scan
+path, which is what makes it worth calling out.
+
+If your setup resolves the package somewhere unusual, add the path yourself:
+
+```css
+@source '../node_modules/@kubermatic/ui-kit/dist';
+```
+
+### The base layer is opt-in
+
+`theme.css` sets tokens and nothing else — importing design tokens should not
+take over your page. If you want the kit to own the body background, text
+colour and typeface, ask for it:
+
+```css
+@import '@kubermatic/ui-kit/preflight.css';
+```
+
+Skip it if your app already sets those, for instance a Next.js app injecting a
+typeface through `next/font`. Otherwise the winner is decided by import order,
+which is not a thing you want deciding your typography.
+
+### Fonts
+
+The kit names `Ubuntu` and `Roboto` in `--font-display` and `--font-sans` but
+does not load them — a component library that injects `@font-face` rules
+fights with every app that has its own font strategy. Load them however you
+already load fonts, or re-point the two roles at faces you do have.
+
+## 3. Wrap the app
+
+```tsx
+import { ThemeProvider } from '@kubermatic/ui-kit';
+
+export default function App({ children }) {
+  return <ThemeProvider defaultTheme="system">{children}</ThemeProvider>;
+}
+```
+
+`ThemeProvider` resolves `system` against `prefers-color-scheme`, persists the
+choice to localStorage, and toggles the `.dark` class the palette keys off.
+
+## 4. Server-rendered? Add the no-flash script
+
+React can only apply the theme class in an effect, by which time the
+server-rendered HTML has already painted. A user who chose dark sees a white
+flash on every fresh document.
+
+The fix is a synchronous script in `<head>`, above the stylesheets. It ships
+with the package so it cannot drift from the provider:
+
+```tsx
+import { themeScript } from '@kubermatic/ui-kit';
+
+// app/layout.tsx
+<head>
+  <script dangerouslySetInnerHTML={{ __html: themeScript() }} />
+</head>;
+```
+
+If you passed a custom `storageKey` to `ThemeProvider`, pass the same one here
+— they have to agree about where the preference is stored.
+
+## Server Components
+
+Every component and hook module carries `'use client'`, and the build preserves
+modules rather than bundling, so the directives survive per file. You can
+import from `@kubermatic/ui-kit` inside a Server Component; the parts that need
+a client boundary declare their own.
+
+`themeScript`, `cn`, `contrastRatio` and the token metadata have no directive
+and no DOM dependency, so they run on the server too.
+
+## Icons
+
+`lucide-react` comes with the package — do not install your own copy. It is
+re-exported behind its own entry point, so importing a component does not pull
+an icon barrel into your module graph:
+
+```tsx
+import { Server, KeyRound } from '@kubermatic/ui-kit/icons';
+```
+
+The same applies to TanStack Table: `ColumnDef`, `flexRender` and
+`createColumnHelper` come from the root export, because `DataTable` owns the
+dependency.
+
+## Check it worked
+
+Three failure modes, and how they look:
+
+| Symptom                         | Cause                                            |
+| ------------------------------- | ------------------------------------------------ |
+| Components render but unstyled  | Tailwind is not scanning `dist` — see `@source`. |
+| Colours are wrong or absent     | `theme.css` imported before `tailwindcss`.       |
+| Dark mode flashes light on load | `themeScript()` is not in `<head>`.              |
