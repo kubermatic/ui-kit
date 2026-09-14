@@ -35,7 +35,7 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
-    "@tanstack/react-table": "8.21.3",
+    "@tanstack/react-table": "9.2.4",
     "@tanstack/react-virtual": "3.14.8",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
