@@ -120,3 +120,27 @@ playwright_chromium() {
 
   echodate "Chromium installed."
 }
+
+# Exchange the AppRole credentials Prow injects for a Vault token.
+#
+# $VAULT_ADDR, $VAULT_ROLE_ID and $VAULT_SECRET_ID all come from the
+# `preset-vault` label on the job; a job without that label reaches this with
+# none of them set, which is the failure this checks for. Same shape as the
+# helper of the same name in developer-platform-dashboard — Vault is entered
+# the same way everywhere, and the build image already carries the CLI.
+vault_ci_login() {
+  # Already logged in, e.g. when running this locally after `vault login`.
+  if [ -n "${VAULT_TOKEN:-}" ]; then
+    return 0
+  fi
+
+  if [ -z "${VAULT_ROLE_ID:-}" ] || [ -z "${VAULT_SECRET_ID:-}" ]; then
+    echodate "ERROR: \$VAULT_ROLE_ID and \$VAULT_SECRET_ID must be set. Is the preset-vault label on this job?"
+    return 1
+  fi
+
+  local token
+  token=$(vault write --format=json auth/approle/login "role_id=$VAULT_ROLE_ID" "secret_id=$VAULT_SECRET_ID" | jq -r '.auth.client_token')
+
+  export VAULT_TOKEN="$token"
+}

@@ -23,16 +23,22 @@
 ### from an unreviewed branch, and this job holds a credential that can publish
 ### under the @kubermatic scope.
 ###
-### One credential does both halves of the job. GitHub Packages authenticates
-### with a classic PAT, which is what the bot token already is, so a second
-### token would have had to be minted from the same bot account — buying
-### independent rotation, but no privilege separation, since it is the account
-### and not the token that bounds the damage. If this job ever moves to a bot
-### of its own, split it back apart: the `repo` scope below is the wide half.
+### The two halves hold separate credentials, because they now live in two
+### different systems: GitHub authenticates the branch push and the PR with the
+### bot's PAT, and registry.npmjs.org authenticates the publish with a token
+### out of Vault. Neither can do the other's job, which is the improvement over
+### publishing to GitHub Packages — that took the same PAT for both, so `repo`
+### and publish rights travelled together.
+###
+### The npm token has to be a granular access token scoped to the @kubermatic
+### packages, not a classic one: publishing from CI cannot answer a 2FA prompt,
+### and a classic automation token carries the whole account.
 ###
 ### Required environment:
 ###   KUBERMATIC_BOT_GITHUB_TOKEN — preset-kubermatic-bot-token. Needs `repo`
-###     to push the branch and open the PR, and `write:packages` to publish.
+###     to push the branch and open the PR. No package scopes anymore.
+###   VAULT_ADDR / VAULT_ROLE_ID / VAULT_SECRET_ID — preset-vault. Reads
+###     `publish_token` from `dev/npm`.
 
 set -euo pipefail
 
@@ -47,14 +53,25 @@ if [ -z "${KUBERMATIC_BOT_GITHUB_TOKEN:-}" ]; then
   exit 1
 fi
 
+# Checked here rather than at the publish step below, even though only that
+# step needs it. A missing preset-vault label would otherwise stay invisible
+# until the one run that has something to publish, which is the worst moment
+# to discover it — the version PR is already merged by then.
+if [ -z "${VAULT_ADDR:-}" ]; then
+  echodate "ERROR: \$VAULT_ADDR is not set. Is the preset-vault label on this job?"
+  exit 1
+fi
+
 npm_ci
 
 # This is the last line of defence, not a second CI.
 #
 # Tide will not merge a PR whose presubmits are red, so main has already been
 # through the full suite on this exact tree. What that does not cover is a
-# merge of two individually-green PRs, and a bad version cannot be unpublished
-# from GitHub Packages — only deprecated. The fast checks, not the browser
+# merge of two individually-green PRs, and a bad version cannot be taken off
+# npm either — unpublishing a version is only allowed in the first 72 hours and
+# only if nothing depends on it, so in practice it is deprecate-and-move-on.
+# The fast checks, not the browser
 # suite: that adds several minutes and its own flake surface for a signal the
 # presubmits already produced.
 echodate "Gating the release on the fast checks…"
@@ -114,7 +131,7 @@ if [ "$pending" -gt 0 ]; then
 Opened automatically by \`post-ui-kit-release\`.
 
 Merging this PR bumps the versions and changelogs from the changesets on
-\`main\`, and the next run of this job publishes the result to GitHub Packages.
+\`main\`, and the next run of this job publishes the result to npm.
 
 It still needs \`/lgtm\` and \`/approve\` from a human — Tide does not merge
 anything without them.
@@ -128,23 +145,45 @@ fi
 
 echodate "No pending changesets, publishing…"
 
-# `npm publish` reads the token from the user-level .npmrc. The scope line
-# repeats what packages/*/package.json already declare in publishConfig, so a
-# package that forgets it still cannot go to the public registry by accident.
-#
-# The same bot token that pushed the branch above. npm.pkg.github.com takes a
-# classic PAT directly as the auth token; it has no notion of a separate npm
-# credential, which is why there is only one secret in play here.
+echodate "Getting the npm token from Vault…"
+retry 5 vault_ci_login
+
+# `vault kv get` prints a trailing newline that would end up inside the token
+# in the .npmrc; npm sends the value verbatim in the Authorization header, and
+# the registry answers 401 with nothing that points at a stray newline.
+NPM_TOKEN="$(vault kv get -field=publish_token dev/npm | tr -d '\n')"
+
+if [ -z "$NPM_TOKEN" ]; then
+  echodate "ERROR: dev/npm publish_token is empty."
+  exit 1
+fi
+
+# `npm publish` reads the token from the user-level .npmrc, so it has to be a
+# file and not an argument. Written under a umask that keeps it unreadable to
+# anyone else from the moment it exists, rather than chmod'ing a file that was
+# briefly world-readable, and removed on the way out — this token outlives the
+# pod, unlike the GitHub one, which the preset would have rotated anyway.
 : "${HOME:=/root}"
-cat > "$HOME/.npmrc" << EOF
-@kubermatic:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=${KUBERMATIC_BOT_GITHUB_TOKEN}
+NPMRC="$HOME/.npmrc"
+trap 'rm -f "$NPMRC"' EXIT
+
+(
+  umask 077
+  cat > "$NPMRC" << EOF
+//registry.npmjs.org/:_authToken=${NPM_TOKEN}
 EOF
-chmod 0600 "$HOME/.npmrc"
+)
+
+# Fails loudly on a revoked or mistyped token, which is otherwise reported as a
+# 404 on the first package — npm does not distinguish "no such package" from
+# "you may not see it".
+echodate "Publishing as $(npm whoami --registry https://registry.npmjs.org)."
 
 # Publishes every package whose version is not on the registry yet, and is a
 # no-op when they all are — which is the common case, since this job runs on
-# every push to main.
+# every push to main. The registry it publishes to is the one in each
+# package's publishConfig, and `access: public` in .changeset/config.json is
+# what keeps a scoped package from defaulting to private.
 npm run release
 
 # The tags changesets wrote locally. Without this the repo has no record of

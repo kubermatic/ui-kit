@@ -8,13 +8,6 @@ Shared ESLint flat config for Kubermatic frontend projects.
 npm install --save-dev @kubermatic/eslint-config eslint
 ```
 
-Published to GitHub Packages:
-
-```
-# .npmrc
-@kubermatic:registry=https://npm.pkg.github.com
-```
-
 ## Use
 
 ```js

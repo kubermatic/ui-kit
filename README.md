@@ -1,7 +1,7 @@
 # Kubermatic UI Kit
 
 A React component library and Storybook catalogue, shared across Kubermatic
-products and published to GitHub Packages. It carries the brand palette and
+products and published to npm. It carries the brand palette and
 type hierarchy over a semantic token layer, and a component set sized to
 rebuild the consuming product dashboards on one library: primitives, forms,
 data display, overlays, an application frame and two page templates.

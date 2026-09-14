@@ -14,12 +14,7 @@ run `npm run storybook`.
 npm install @kubermatic/ui-kit
 ```
 
-Published to GitHub Packages, so point the `@kubermatic` scope at it:
-
-```
-# .npmrc
-@kubermatic:registry=https://npm.pkg.github.com
-```
+Published to npm, so nothing to configure beyond the install.
 
 Peers: `react` and `react-dom` (^19), `tailwindcss` (^4.3).
 
