@@ -1,0 +1,50 @@
+# Copyright 2026 The Kubermatic Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Prow reads this file from the head of every pull request (inrepoconfig, see
+# in_repo_config in kubermatic/infra prow/config.yaml). Two consequences worth
+# knowing:
+#
+#  * A PR can change the jobs that test it. That is fine for presubmits, which
+#    hold no credentials and only run for org members. It is why the release
+#    job is NOT here — it lives in kubermatic/infra, out of reach of a PR.
+#  * Only the default build cluster is available in this file. Anything that
+#    needs a secret from the control plane cluster has to be defined centrally.
+#
+# The checkconfig presubmit in kubermatic/infra validates this file on every
+# PR, so a typo here fails the PR rather than silently dropping a job.
+
+presubmits:
+  # One job, not four. Every pod paid for its own cold `npm ci` — Prow has no
+  # actions/cache — so the install that dominates the wall clock was being run
+  # four times to produce one verdict on one commit. The stages are still
+  # separate and still ordered cheapest-first inside hack/ci/verify.sh; what
+  # was lost is per-stage granularity in the GitHub check list and the ability
+  # to `/retest` only the leg that failed.
+  - name: pre-ui-kit-verify
+    always_run: true
+    decorate: true
+    clone_uri: 'ssh://git@github.com/kubermatic/ui-kit.git'
+    spec:
+      containers:
+        - image: quay.io/kubermatic/build:go-1.26-node-24-14
+          command:
+            - ./hack/ci/verify.sh
+          resources:
+            requests:
+              # Sized for the browser suite, which is the peak: Vite, a
+              # Storybook runner and a real Chromium at once. The rest of the
+              # script is comfortable in well under half of this.
+              cpu: 4
+              memory: 8Gi

@@ -1,0 +1,169 @@
+# Dependency updates.
+#
+# `.npmrc` sets `save-exact=true`, so every version here is an exact pin and
+# nothing moves without a PR. That makes a bot mandatory rather than optional.
+#
+# Two properties this config is built around:
+#
+#  * **Compatible sets must move together.** Several families are only valid at
+#    a matching version — Storybook and its addons, `vitest` and `@vitest/*`,
+#    `tailwindcss` and `@tailwindcss/vite`, React and its types. Splitting one
+#    across two PRs produces a red build on both, and the group patterns below
+#    exist to prevent that. Note that a dependency lands in the **first** group
+#    it matches, so order is significant.
+#
+#  * **Some majors cannot be taken yet.** Where a peer range blocks an upgrade,
+#    it is ignored explicitly with the reason, because a PR that can never go
+#    green is pure noise. Each is worth re-checking when the blocker releases.
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    # One entry, not one per workspace: the root package-lock.json is the only
+    # lockfile, and Dependabot reads the workspace manifests through it.
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 8
+    labels:
+      - dependencies
+      - ok-to-test
+    commit-message:
+      prefix: chore(deps)
+      prefix-development: chore(deps-dev)
+      include: scope
+    versioning-strategy: increase
+
+    # Do not take a release the day it is published.
+    #
+    # The npm supply-chain incidents of the last few years share a shape: a
+    # maintainer account is compromised, a malicious patch goes out, and it is
+    # unpublished within hours — but anything that ran `npm install` in that
+    # window already executed it. A short delay costs nothing here, because
+    # `save-exact` means we are never on the bleeding edge anyway, and it moves
+    # us out of the blast radius of the fastest-moving attacks.
+    #
+    # Longer for majors: those need a considered review regardless, so there is
+    # no value in seeing the PR early. Security updates ignore cooldown, which
+    # is the behaviour you want.
+    cooldown:
+      default-days: 5
+      semver-major-days: 14
+
+    ignore:
+      # Workspace-internal link (`"@kubermatic/eslint-config": "*"`). It is
+      # resolved by npm workspaces, not the registry; left alone, Dependabot
+      # would try to "update" it to the published version and break the link.
+      - dependency-name: '@kubermatic/*'
+
+      # typescript-eslint peers on `typescript: >=4.8.4 <6.1.0`. TypeScript 7
+      # is released, so this would otherwise open a PR every week that cannot
+      # merge. Revisit when typescript-eslint supports 7.
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
+
+      # @storybook/addon-vitest peers on `vitest: ^3 || ^4` and
+      # `@vitest/browser-playwright: ^4`. Vitest 5 exists but would break the
+      # accessibility suite. Revisit when addon-vitest supports 5.
+      - dependency-name: vitest
+        update-types: ['version-update:semver-major']
+      - dependency-name: '@vitest/*'
+        update-types: ['version-update:semver-major']
+
+    groups:
+      # Ships inside the published package, so a bump here is visible to
+      # consumers and needs a changeset. Kept first and separate so that is
+      # obvious from the PR rather than something to notice in the diff.
+      #
+      # Exact names on purpose: `tailwind-merge` is a runtime dependency of the
+      # kit and has nothing to do with the Tailwind toolchain below, which a
+      # `tailwind*` pattern would wrongly conflate.
+      published-runtime:
+        patterns:
+          - '@base-ui/react'
+          - class-variance-authority
+          - clsx
+          - tailwind-merge
+
+      # `eslint-plugin-storybook` is versioned with Storybook (10.6.0), not
+      # with ESLint, so it belongs here — and must appear before the lint group
+      # below, whose `eslint-plugin-*` pattern would otherwise claim it and
+      # split the set.
+      storybook:
+        patterns:
+          - storybook
+          - '@storybook/*'
+          - eslint-plugin-storybook
+
+      # The browser test stack. `playwright` is included because
+      # `@vitest/browser-playwright` peers on it.
+      test-runner:
+        patterns:
+          - vitest
+          - '@vitest/*'
+          - playwright
+
+      tailwind:
+        patterns:
+          - tailwindcss
+          - '@tailwindcss/*'
+
+      # React and its types are singletons; a mismatch between `react` and
+      # `@types/react` surfaces as inscrutable type errors.
+      react:
+        patterns:
+          - react
+          - react-dom
+          - '@types/react'
+          - '@types/react-dom'
+
+      lint:
+        patterns:
+          - eslint
+          - '@eslint/*'
+          - 'eslint-config-*'
+          - 'eslint-plugin-*'
+          - typescript-eslint
+          - prettier
+          - globals
+
+      # Bundler and its React plugin move as a pair, and Storybook's
+      # react-vite peers on the Vite major.
+      vite:
+        patterns:
+          - vite
+          - '@vitejs/*'
+
+      testing-library:
+        patterns:
+          - '@testing-library/*'
+
+      # The brand typefaces. Nothing depends on their version but there is no
+      # reason to review them one at a time.
+      fonts:
+        patterns:
+          - '@fontsource/*'
+
+      release:
+        patterns:
+          - '@changesets/*'
+          - publint
+          - '@arethetypeswrong/*'
+
+      # Everything the groups above do not claim — currently `lucide-react`,
+      # `jsdom`, `@types/node`. Without this they arrive as one PR each, and a
+      # queue of single-line dev bumps is how a team learns to stop reading
+      # Dependabot PRs.
+      #
+      # Last, because a dependency lands in the first group it matches, and a
+      # catch-all placed earlier would swallow every group above it.
+      #
+      # Patch and minor only. A major in here is a real change — `jsdom` alters
+      # DOM behaviour the unit suite depends on — and deserves its own PR
+      # rather than being buried in a batch of six.
+      dev-tooling:
+        dependency-type: development
+        update-types:
+          - minor
+          - patch

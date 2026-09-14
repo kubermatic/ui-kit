@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 The Kubermatic ui-kit Authors.
+ * Copyright 2026 The Kubermatic Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,119 +13,89 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 'use client';
 
-import * as React from 'react';
-import { Popover as PopoverPrimitive } from '@base-ui/react';
+import { Popover as BasePopover } from '@base-ui/react/popover';
+import type { ComponentProps } from 'react';
 
-import { cn } from '@/lib/utils';
+import { cn } from '../../lib/utils.js';
 
-function Popover({ ...props }: PopoverPrimitive.Root.Props) {
-  return <PopoverPrimitive.Root {...props} />;
+/**
+ * Popover — an anchored panel with interactive content.
+ *
+ * Distinct from `Tooltip`, which is a description and cannot hold anything
+ * focusable, and from `Menu`, which is a list of commands with arrow-key
+ * navigation. This is the one that holds a form: an organisation selector
+ * and its metadata filter are both popovers.
+ */
+export const Popover = BasePopover.Root;
+export const PopoverTrigger = BasePopover.Trigger;
+export const PopoverClose = BasePopover.Close;
+
+export interface PopoverContentProps extends Omit<
+  ComponentProps<typeof BasePopover.Popup>,
+  'className'
+> {
+  className?: string;
+  side?: 'top' | 'right' | 'bottom' | 'left';
+  align?: 'start' | 'center' | 'end';
+  sideOffset?: number;
 }
 
-function PopoverTrigger({ ...props }: PopoverPrimitive.Trigger.Props) {
-  return <PopoverPrimitive.Trigger data-slot="popover-trigger" {...props} />;
-}
-
-function PopoverContent({
+export function PopoverContent({
   className,
   side = 'bottom',
-  sideOffset = 4,
   align = 'center',
-  alignOffset = 0,
-  anchor,
-  container,
+  sideOffset = 6,
   ...props
-}: PopoverPrimitive.Popup.Props &
-  Pick<
-    PopoverPrimitive.Positioner.Props,
-    'side' | 'align' | 'sideOffset' | 'alignOffset' | 'anchor'
-  > & {
-    container?: HTMLElement | React.RefObject<HTMLElement | null> | null;
-  }) {
+}: PopoverContentProps) {
   return (
-    <PopoverPrimitive.Portal container={container}>
-      <PopoverPrimitive.Positioner
+    <BasePopover.Portal>
+      <BasePopover.Positioner
         side={side}
-        sideOffset={sideOffset}
         align={align}
-        alignOffset={alignOffset}
-        anchor={anchor}
-        className="isolate z-50"
+        sideOffset={sideOffset}
+        className="z-50 outline-none"
       >
-        <PopoverPrimitive.Popup
+        <BasePopover.Popup
           data-slot="popover-content"
           className={cn(
-            'bg-popover text-popover-foreground data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 w-72 origin-(--transform-origin) rounded-md border p-4 shadow-md outline-hidden',
+            'max-h-[var(--available-height)] w-72 overflow-y-auto',
+            'rounded-md border border-border bg-background p-4 text-foreground shadow-md outline-none',
+            'origin-[var(--transform-origin)] transition-[transform,scale,opacity]',
+            'data-starting-style:scale-95 data-starting-style:opacity-0',
+            'data-ending-style:scale-95 data-ending-style:opacity-0',
             className,
           )}
           {...props}
         />
-      </PopoverPrimitive.Positioner>
-    </PopoverPrimitive.Portal>
+      </BasePopover.Positioner>
+    </BasePopover.Portal>
   );
 }
 
-/**
- * Anchors the popover to an element other than its trigger. Pass the returned
- * ref to that element and the same ref to `<PopoverContent anchor={...} />`.
- *
- * Replaces the former `<PopoverAnchor>` component: Base UI positions against an
- * `anchor` prop rather than a marker element in the tree.
- */
-function usePopoverAnchor() {
-  return React.useRef<HTMLDivElement | null>(null);
-}
-
-function PopoverHeader({ className, ...props }: React.ComponentProps<'div'>) {
-  return (
-    <div
-      data-slot="popover-header"
-      className={cn('flex flex-col gap-1 text-sm', className)}
-      {...props}
-    />
-  );
-}
-
-/**
- * Base UI's own `Title`, not a styled `div`.
- *
- * The popup carries `role="dialog"`, which requires an accessible name. Base UI
- * derives that by pointing the popup's `aria-labelledby` at this part — a plain
- * `div` renders identically and leaves the dialog anonymous to a screen reader.
- */
-function PopoverTitle({ className, ...props }: PopoverPrimitive.Title.Props) {
-  return (
-    <PopoverPrimitive.Title
-      data-slot="popover-title"
-      className={cn('font-medium', className)}
-      {...props}
-    />
-  );
-}
-
-/** Wires the popup's `aria-describedby`, for the same reason as `PopoverTitle`. */
-function PopoverDescription({
+export function PopoverTitle({
   className,
   ...props
-}: PopoverPrimitive.Description.Props) {
+}: Omit<ComponentProps<typeof BasePopover.Title>, 'className'> & { className?: string }) {
   return (
-    <PopoverPrimitive.Description
-      data-slot="popover-description"
-      className={cn('text-muted-foreground', className)}
+    <BasePopover.Title
+      data-slot="popover-title"
+      className={cn('font-sans text-sm leading-none font-semibold', className)}
       {...props}
     />
   );
 }
 
-export {
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-  PopoverHeader,
-  PopoverTitle,
-  PopoverDescription,
-  usePopoverAnchor,
-};
+export function PopoverDescription({
+  className,
+  ...props
+}: Omit<ComponentProps<typeof BasePopover.Description>, 'className'> & { className?: string }) {
+  return (
+    <BasePopover.Description
+      data-slot="popover-description"
+      className={cn('font-sans text-sm text-muted-foreground', className)}
+      {...props}
+    />
+  );
+}

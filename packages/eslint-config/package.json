@@ -1,0 +1,57 @@
+{
+  "name": "@kubermatic/eslint-config",
+  "version": "0.1.0",
+  "description": "Shared ESLint flat config for Kubermatic frontend projects",
+  "license": "Apache-2.0",
+  "type": "module",
+  "files": [
+    "rules",
+    "index.js",
+    "index.d.ts",
+    "LICENSE",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    },
+    "./rules": {
+      "types": "./rules/index.d.ts",
+      "default": "./rules/index.js"
+    }
+  },
+  "dependencies": {
+    "@eslint/js": "10.0.1",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "eslint-plugin-storybook": "10.6.0",
+    "globals": "17.12.0",
+    "typescript-eslint": "8.69.0"
+  },
+  "peerDependencies": {
+    "eslint": ">=10"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kubermatic/ui-kit.git",
+    "directory": "packages/eslint-config"
+  },
+  "homepage": "https://github.com/kubermatic/ui-kit#readme",
+  "bugs": {
+    "url": "https://github.com/kubermatic/ui-kit/issues"
+  },
+  "keywords": [
+    "kubermatic",
+    "eslint",
+    "eslint-config",
+    "typescript",
+    "react"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org"
+  }
+}

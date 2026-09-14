@@ -4,3 +4,5 @@ storybook-static
 *storybook.log
 .DS_Store
 *.tsbuildinfo
+*.tgz
+coverage

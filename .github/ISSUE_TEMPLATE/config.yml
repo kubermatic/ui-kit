@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/kubermatic/ui-kit/security/advisories/new
+    about: Report privately — never in a public issue. See SECURITY.md.
+  - name: Browse the catalogue
+    url: https://kubermatic.github.io/ui-kit/
+    about: Tokens, theming and every component, with live examples.
+  - name: How do I use this in my app?
+    url: https://kubermatic.github.io/ui-kit/?path=/docs/guides-installation--docs
+    about: Registry setup, the two CSS imports, and the three things that usually go wrong.

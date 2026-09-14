@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 The Kubermatic ui-kit Authors.
+ * Copyright 2026 The Kubermatic Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,153 +13,164 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 'use client';
 
-import * as React from 'react';
-import { Dialog as DialogPrimitive } from '@base-ui/react';
-import { XIcon } from 'lucide-react';
+import { Dialog as BaseDialog } from '@base-ui/react/dialog';
+import { cva, type VariantProps } from 'class-variance-authority';
+import { X } from 'lucide-react';
+import type { ComponentProps, ReactNode } from 'react';
 
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+import { cn } from '../../lib/utils.js';
 
-function Dialog({ ...props }: DialogPrimitive.Root.Props) {
-  return <DialogPrimitive.Root {...props} />;
+/**
+ * Dialog — a modal.
+ *
+ * Base UI owns the parts that are easy to get wrong and impossible to notice
+ * in manual testing: the focus trap, restoring focus to the trigger on close,
+ * `aria-modal`, and marking the rest of the page inert so a screen reader's
+ * virtual cursor cannot wander out of the dialog while it is open.
+ *
+ * `Dialog.Title` and `Dialog.Description` are not decoration — they are what
+ * `aria-labelledby` and `aria-describedby` point at, wired automatically by
+ * being inside the popup. A dialog rendered without a `DialogTitle` is
+ * announced as "dialog" and nothing else, which is the state of several
+ * existing product dialogs.
+ */
+export const Dialog = BaseDialog.Root;
+export const DialogTrigger = BaseDialog.Trigger;
+export const DialogClose = BaseDialog.Close;
+
+export const dialogContentVariants = cva(
+  [
+    'fixed top-1/2 left-1/2 z-50 -translate-x-1/2 -translate-y-1/2',
+    'flex max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] flex-col gap-4',
+    'rounded-lg border border-border bg-background p-6 text-foreground shadow-lg outline-none',
+    'transition-[transform,scale,opacity]',
+    'data-starting-style:scale-95 data-starting-style:opacity-0',
+    'data-ending-style:scale-95 data-ending-style:opacity-0',
+  ],
+  {
+    variants: {
+      size: {
+        sm: 'sm:max-w-sm',
+        default: 'sm:max-w-lg',
+        lg: 'sm:max-w-2xl',
+        xl: 'sm:max-w-4xl',
+        /* For an editor or a graph — the cases that want the full screen. */
+        full: 'sm:h-[calc(100dvh-4rem)] sm:max-h-none sm:w-[calc(100vw-4rem)] sm:max-w-none',
+      },
+    },
+    defaultVariants: { size: 'default' },
+  },
+);
+
+export interface DialogContentProps
+  extends
+    Omit<ComponentProps<typeof BaseDialog.Popup>, 'className'>,
+    VariantProps<typeof dialogContentVariants> {
+  className?: string;
+  /** Renders the corner close button. */
+  showClose?: boolean;
+  closeLabel?: string;
 }
 
-function DialogTrigger({ ...props }: DialogPrimitive.Trigger.Props) {
-  return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />;
-}
-
-function DialogPortal({ ...props }: DialogPrimitive.Portal.Props) {
-  return <DialogPrimitive.Portal {...props} />;
-}
-
-function DialogClose({ ...props }: DialogPrimitive.Close.Props) {
-  return <DialogPrimitive.Close data-slot="dialog-close" {...props} />;
-}
-
-function DialogOverlay({
+export function DialogContent({
   className,
-  ...props
-}: DialogPrimitive.Backdrop.Props) {
-  return (
-    <DialogPrimitive.Backdrop
-      data-slot="dialog-overlay"
-      className={cn(
-        'data-closed:animate-out data-closed:fade-out-0 data-open:animate-in data-open:fade-in-0 fixed inset-0 z-50 bg-black/50',
-        className,
-      )}
-      {...props}
-    />
-  );
-}
-
-function DialogContent({
-  className,
+  size,
+  showClose = true,
+  closeLabel = 'Close',
   children,
-  showCloseButton = true,
-  container,
   ...props
-}: DialogPrimitive.Popup.Props & {
-  showCloseButton?: boolean;
-  container?: DialogPrimitive.Portal.Props['container'];
-}) {
+}: DialogContentProps) {
   return (
-    <DialogPortal container={container}>
-      <DialogOverlay />
-      <DialogPrimitive.Popup
-        data-slot="dialog-content"
+    <BaseDialog.Portal>
+      <BaseDialog.Backdrop
         className={cn(
-          'bg-background data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 outline-none sm:max-w-lg',
-          className,
+          'fixed inset-0 z-50 bg-foreground/50 transition-opacity',
+          'data-starting-style:opacity-0 data-ending-style:opacity-0',
         )}
+      />
+      <BaseDialog.Popup
+        data-slot="dialog-content"
+        className={cn(dialogContentVariants({ size }), className)}
         {...props}
       >
         {children}
-        {showCloseButton && (
-          <DialogPrimitive.Close
-            data-slot="dialog-close"
-            className="ring-offset-background focus:ring-ring absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+        {showClose ? (
+          <BaseDialog.Close
+            aria-label={closeLabel}
+            className={cn(
+              'absolute top-4 right-4 flex size-7 items-center justify-center rounded-sm',
+              'text-muted-foreground transition-colors outline-none',
+              'hover:bg-secondary hover:text-secondary-foreground',
+              'focus-visible:ring-[3px] focus-visible:ring-ring/50',
+            )}
           >
-            <XIcon />
-            <span className="sr-only">Close</span>
-          </DialogPrimitive.Close>
-        )}
-      </DialogPrimitive.Popup>
-    </DialogPortal>
+            <X className="size-4" />
+          </BaseDialog.Close>
+        ) : null}
+      </BaseDialog.Popup>
+    </BaseDialog.Portal>
   );
 }
 
-function DialogHeader({ className, ...props }: React.ComponentProps<'div'>) {
+export function DialogHeader({ className, ...props }: ComponentProps<'div'>) {
   return (
     <div
       data-slot="dialog-header"
-      className={cn('flex flex-col gap-2 text-center sm:text-left', className)}
+      className={cn('flex flex-col gap-1.5 pr-8 text-left', className)}
       {...props}
     />
   );
 }
 
-function DialogFooter({
+export function DialogTitle({
   className,
-  showCloseButton = false,
-  children,
   ...props
-}: React.ComponentProps<'div'> & {
-  showCloseButton?: boolean;
-}) {
+}: Omit<ComponentProps<typeof BaseDialog.Title>, 'className'> & { className?: string }) {
+  return (
+    <BaseDialog.Title
+      data-slot="dialog-title"
+      className={cn('font-display text-lg font-bold text-heading', className)}
+      {...props}
+    />
+  );
+}
+
+export function DialogDescription({
+  className,
+  ...props
+}: Omit<ComponentProps<typeof BaseDialog.Description>, 'className'> & { className?: string }) {
+  return (
+    <BaseDialog.Description
+      data-slot="dialog-description"
+      className={cn('font-sans text-sm text-muted-foreground', className)}
+      {...props}
+    />
+  );
+}
+
+/** Scrolls its own content, so the header and footer stay put on a long form. */
+export function DialogBody({ className, ...props }: ComponentProps<'div'>) {
+  return (
+    <div
+      data-slot="dialog-body"
+      className={cn('-mx-6 min-h-0 flex-1 overflow-y-auto px-6', className)}
+      {...props}
+    />
+  );
+}
+
+export interface DialogFooterProps extends ComponentProps<'div'> {
+  children?: ReactNode;
+}
+
+export function DialogFooter({ className, ...props }: DialogFooterProps) {
   return (
     <div
       data-slot="dialog-footer"
-      className={cn(
-        'flex flex-col-reverse gap-2 sm:flex-row sm:justify-end',
-        className,
-      )}
-      {...props}
-    >
-      {children}
-      {showCloseButton && (
-        <DialogPrimitive.Close render={<Button variant="outline" />}>
-          Close
-        </DialogPrimitive.Close>
-      )}
-    </div>
-  );
-}
-
-function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
-  return (
-    <DialogPrimitive.Title
-      data-slot="dialog-title"
-      className={cn('text-lg leading-none font-semibold', className)}
+      className={cn('flex flex-col-reverse gap-2 sm:flex-row sm:justify-end', className)}
       {...props}
     />
   );
 }
-
-function DialogDescription({
-  className,
-  ...props
-}: DialogPrimitive.Description.Props) {
-  return (
-    <DialogPrimitive.Description
-      data-slot="dialog-description"
-      className={cn('text-muted-foreground text-sm', className)}
-      {...props}
-    />
-  );
-}
-
-export {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogOverlay,
-  DialogPortal,
-  DialogTitle,
-  DialogTrigger,
-};

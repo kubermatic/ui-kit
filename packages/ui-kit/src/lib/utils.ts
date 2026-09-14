@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 The Kubermatic ui-kit Authors.
+ * Copyright 2026 The Kubermatic Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,10 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
-export function cn(...inputs: ClassValue[]) {
+/**
+ * Merge conditional class names, with later Tailwind utilities winning over
+ * earlier conflicting ones. Every component funnels its `className` through
+ * this so consumers can always override a variant's styling.
+ */
+export function cn(...inputs: ClassValue[]): string {
   return twMerge(clsx(inputs));
 }

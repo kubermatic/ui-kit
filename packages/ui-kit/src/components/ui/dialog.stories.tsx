@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 The Kubermatic ui-kit Authors.
+ * Copyright 2026 The Kubermatic Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,13 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, screen } from 'storybook/test';
 
 import { Button } from './button';
 import {
   Dialog,
+  DialogBody,
   DialogClose,
   DialogContent,
   DialogDescription,
@@ -28,94 +27,52 @@ import {
   DialogTitle,
   DialogTrigger,
 } from './dialog';
+import { Field } from './field';
 import { Input } from './input';
-import { Label } from './label';
 
 const meta = {
-  title: 'Primitives/Dialog',
+  title: 'Overlays/Dialog',
   component: Dialog,
-  parameters: { layout: 'centered' },
+  parameters: {
+    layout: 'centered',
+    docs: {
+      description: {
+        component:
+          'Base UI owns the parts that are easy to get wrong and impossible to notice in ' +
+          'manual testing: the focus trap, restoring focus to the trigger on close, ' +
+          '`aria-modal`, and marking the rest of the page inert so a screen reader cannot ' +
+          'wander out of the dialog while it is open.\n\n' +
+          '`DialogTitle` and `DialogDescription` are not decoration — they are what ' +
+          '`aria-labelledby` and `aria-describedby` point at, wired automatically by being ' +
+          'inside the popup. A dialog rendered without a `DialogTitle` is announced as ' +
+          '"dialog" and nothing else, which is the state of several existing ones.\n\n' +
+          'For a confirmation, use `ConfirmDialog`: it is an *alert* dialog, which does not ' +
+          'close on an outside click.',
+      },
+    },
+  },
 } satisfies Meta<typeof Dialog>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/**
- * `DialogTrigger` and `DialogClose` adopt a `Button` through Base UI's `render`
- * prop — there is no `asChild` in this kit.
- */
 export const Playground: Story = {
   render: () => (
     <Dialog>
-      <DialogTrigger
-        render={<Button variant="outline">Attach volume</Button>}
-      />
+      <DialogTrigger render={<Button>New external secret</Button>} />
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Attach data volume</DialogTitle>
-          <DialogDescription>
-            The volume is hot-plugged into web-frontend-01 and stays attached
-            across restarts.
-          </DialogDescription>
+          <DialogTitle>New external secret</DialogTitle>
+          <DialogDescription>It will be created in the namespace selected above.</DialogDescription>
         </DialogHeader>
-        <DialogFooter>
-          <DialogClose render={<Button variant="outline">Cancel</Button>} />
-          <Button>Attach</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  ),
-};
-
-/**
- * Open by default so the surface is actually reviewable: the popup portals to
- * `document.body`, so a closed trigger gives the theme toggle and the a11y
- * panel nothing to inspect.
- */
-export const Open: Story = {
-  render: () => (
-    <Dialog defaultOpen>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Attach data volume</DialogTitle>
-          <DialogDescription>Storage class csi-rbd.</DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <DialogClose render={<Button variant="outline">Cancel</Button>} />
-          <Button>Attach</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  ),
-  play: async () => {
-    // `screen`, not `canvas` — the popup is portalled outside the story root.
-    await expect(
-      screen.getByRole('dialog', { name: /attach data volume/i }),
-    ).toBeInTheDocument();
-  },
-};
-
-/** The shape most dashboard dialogs take: a short form over a footer. */
-export const WithForm: Story = {
-  render: () => (
-    <Dialog defaultOpen>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Create virtual machine</DialogTitle>
-          <DialogDescription>
-            Deployed into namespace default.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="dialog-vm-name">Name</Label>
-            <Input id="dialog-vm-name" defaultValue="batch-worker-07" />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="dialog-vm-image">Image</Label>
-            <Input id="dialog-vm-image" defaultValue="Ubuntu 24.04" />
-          </div>
-        </div>
+        <DialogBody className="flex flex-col gap-4 py-2">
+          <Field label="Name" required>
+            <Input placeholder="db-credentials" required />
+          </Field>
+          <Field label="Remote key" description="The path in the provider.">
+            <Input placeholder="secret/data/billing/db" />
+          </Field>
+        </DialogBody>
         <DialogFooter>
           <DialogClose render={<Button variant="outline">Cancel</Button>} />
           <Button>Create</Button>
@@ -125,22 +82,24 @@ export const WithForm: Story = {
   ),
 };
 
-/**
- * `DialogFooter` can supply its own close button instead of one being composed
- * in, which suits a dialog with nothing to confirm.
- */
-export const FooterCloseButton: Story = {
+/** `size="full"` is for an editor or a graph — the cases that want the full screen. */
+export const Sizes: Story = {
   render: () => (
-    <Dialog defaultOpen>
-      <DialogContent showCloseButton={false}>
-        <DialogHeader>
-          <DialogTitle>Migration complete</DialogTitle>
-          <DialogDescription>
-            web-frontend-01 now runs on worker-05.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter showCloseButton />
-      </DialogContent>
-    </Dialog>
+    <div className="flex gap-2">
+      {(['sm', 'default', 'lg'] as const).map((size) => (
+        <Dialog key={size}>
+          <DialogTrigger render={<Button variant="outline">{size}</Button>} />
+          <DialogContent size={size}>
+            <DialogHeader>
+              <DialogTitle>Size: {size}</DialogTitle>
+              <DialogDescription>The width steps up with the content.</DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <DialogClose render={<Button variant="outline">Close</Button>} />
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      ))}
+    </div>
   ),
 };

@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 The Kubermatic ui-kit Authors.
+ * Copyright 2026 The Kubermatic Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,87 +13,115 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 'use client';
 
-import { Tabs as TabsPrimitive } from '@base-ui/react';
+import { Tabs as BaseTabs } from '@base-ui/react/tabs';
 import { cva, type VariantProps } from 'class-variance-authority';
+import type { ComponentProps } from 'react';
 
-import { cn } from '@/lib/utils';
+import { cn } from '../../lib/utils.js';
 
-function Tabs({
-  className,
-  orientation = 'horizontal',
-  ...props
-}: TabsPrimitive.Root.Props) {
-  return (
-    <TabsPrimitive.Root
-      data-slot="tabs"
-      data-orientation={orientation}
-      orientation={orientation}
-      className={cn(
-        'group/tabs flex gap-2 data-[orientation=horizontal]:flex-col',
-        className,
-      )}
-      {...props}
-    />
-  );
-}
+/**
+ * Tabs — the detail-page section switcher.
+ *
+ * One product's `DetailTabs` is a row of `<button>`s with an `onChange`, which
+ * gives no `role="tablist"`, no arrow-key movement between tabs, and no
+ * `aria-controls` linking a tab to its panel — so a screen reader announces
+ * four unrelated buttons and the panel below them is not connected to any of
+ * them. Base UI supplies all of it.
+ *
+ * Two visual variants, because both products have both: `underline` for
+ * page-level sections (the detail pages), `pill` for a segmented switch inside
+ * a panel.
+ */
+export const Tabs = BaseTabs.Root;
 
-const tabsListVariants = cva(
-  'group/tabs-list inline-flex w-fit items-center justify-center rounded-lg p-[3px] text-muted-foreground group-data-[orientation=horizontal]/tabs:h-9 group-data-[orientation=vertical]/tabs:h-fit group-data-[orientation=vertical]/tabs:flex-col data-[variant=line]:rounded-none',
-  {
-    variants: {
-      variant: {
-        default: 'bg-muted',
-        line: 'gap-1 bg-transparent',
-      },
-    },
-    defaultVariants: {
-      variant: 'default',
+export const tabsListVariants = cva('flex items-center', {
+  variants: {
+    variant: {
+      underline: 'gap-4 border-b border-border',
+      pill: 'w-fit gap-1 rounded-md bg-muted p-1',
     },
   },
-);
+  defaultVariants: { variant: 'underline' },
+});
 
-function TabsList({
-  className,
-  variant = 'default',
-  ...props
-}: TabsPrimitive.List.Props & VariantProps<typeof tabsListVariants>) {
+export interface TabsListProps
+  extends
+    Omit<ComponentProps<typeof BaseTabs.List>, 'className'>,
+    VariantProps<typeof tabsListVariants> {
+  className?: string;
+}
+
+export function TabsList({ className, variant, ...props }: TabsListProps) {
   return (
-    <TabsPrimitive.List
+    <BaseTabs.List
       data-slot="tabs-list"
-      data-variant={variant}
+      data-variant={variant ?? 'underline'}
       className={cn(tabsListVariants({ variant }), className)}
       {...props}
     />
   );
 }
 
-function TabsTrigger({ className, ...props }: TabsPrimitive.Tab.Props) {
+export const tabsTabVariants = cva(
+  [
+    'inline-flex items-center justify-center gap-2 whitespace-nowrap',
+    'font-sans text-sm font-medium transition-colors outline-none',
+    'focus-visible:ring-[3px] focus-visible:ring-ring/50',
+    'disabled:pointer-events-none disabled:opacity-50',
+    "[&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4",
+  ],
+  {
+    variants: {
+      variant: {
+        underline: [
+          /* `min-h-9` rather than padding alone: WCAG 2.2 SC 2.5.8 wants a
+           * 24px target and the axe run measures it with real geometry. */
+          '-mb-px min-h-9 border-b-2 border-transparent px-1 text-muted-foreground',
+          'hover:border-border hover:text-foreground',
+          'data-selected:border-primary data-selected:text-primary',
+        ],
+        pill: [
+          'min-h-7 rounded-sm px-3 text-muted-foreground',
+          'hover:text-foreground',
+          'data-selected:bg-background data-selected:text-foreground data-selected:shadow-xs',
+        ],
+      },
+    },
+    defaultVariants: { variant: 'underline' },
+  },
+);
+
+export interface TabsTabProps
+  extends
+    Omit<ComponentProps<typeof BaseTabs.Tab>, 'className'>,
+    VariantProps<typeof tabsTabVariants> {
+  className?: string;
+}
+
+export function TabsTab({ className, variant, ...props }: TabsTabProps) {
   return (
-    <TabsPrimitive.Tab
-      data-slot="tabs-trigger"
+    <BaseTabs.Tab
+      data-slot="tabs-tab"
+      className={cn(tabsTabVariants({ variant }), className)}
+      {...props}
+    />
+  );
+}
+
+export function TabsPanel({
+  className,
+  ...props
+}: Omit<ComponentProps<typeof BaseTabs.Panel>, 'className'> & { className?: string }) {
+  return (
+    <BaseTabs.Panel
+      data-slot="tabs-panel"
       className={cn(
-        "text-foreground/60 hover:text-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:outline-ring dark:text-muted-foreground dark:hover:text-foreground relative inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-all group-data-[orientation=vertical]/tabs:w-full group-data-[orientation=vertical]/tabs:justify-start focus-visible:ring-[3px] focus-visible:outline-1 disabled:pointer-events-none disabled:opacity-50 group-data-[variant=default]/tabs-list:data-active:shadow-sm group-data-[variant=line]/tabs-list:data-active:shadow-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-        'group-data-[variant=line]/tabs-list:bg-transparent group-data-[variant=line]/tabs-list:data-active:bg-transparent dark:group-data-[variant=line]/tabs-list:data-active:border-transparent dark:group-data-[variant=line]/tabs-list:data-active:bg-transparent',
-        'data-active:bg-background data-active:text-foreground dark:data-active:border-input dark:data-active:bg-input/30 dark:data-active:text-foreground',
-        'after:bg-foreground after:absolute after:opacity-0 after:transition-opacity group-data-[orientation=horizontal]/tabs:after:inset-x-0 group-data-[orientation=horizontal]/tabs:after:bottom-[-5px] group-data-[orientation=horizontal]/tabs:after:h-0.5 group-data-[orientation=vertical]/tabs:after:inset-y-0 group-data-[orientation=vertical]/tabs:after:-right-1 group-data-[orientation=vertical]/tabs:after:w-0.5 group-data-[variant=line]/tabs-list:data-active:after:opacity-100',
+        'flex-1 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
         className,
       )}
       {...props}
     />
   );
 }
-
-function TabsContent({ className, ...props }: TabsPrimitive.Panel.Props) {
-  return (
-    <TabsPrimitive.Panel
-      data-slot="tabs-content"
-      className={cn('flex-1 outline-none', className)}
-      {...props}
-    />
-  );
-}
-
-export { Tabs, TabsList, TabsTrigger, TabsContent, tabsListVariants };

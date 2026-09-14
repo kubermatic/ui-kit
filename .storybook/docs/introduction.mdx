@@ -1,0 +1,118 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Introduction" />
+
+# Kubermatic UI Kit
+
+The shared design system for Kubermatic products: the brand palette and type
+hierarchy from the marketing brand document, turned into design tokens, a
+theming mechanism, and a component set sized to build a whole product on —
+primitives, forms, data display, overlays, an application frame and page
+templates.
+
+This catalogue is the reference. It is built from the same source as the
+published package, on every push to `main`, so what you see here is what the
+current version renders.
+
+<div className="my-6 grid gap-3 sm:grid-cols-3">
+  <a
+    className="bg-muted hover:bg-secondary block rounded-lg border p-4 no-underline"
+    href="./?path=/docs/guides-installation--docs"
+  >
+    <strong>Install it →</strong>
+    <br />
+    Registry, peer deps and the two CSS imports.
+  </a>
+  <a
+    className="bg-muted hover:bg-secondary block rounded-lg border p-4 no-underline"
+    href="./?path=/docs/guides-theming--docs"
+  >
+    <strong>Theme it →</strong>
+    <br />
+    Re-point semantic roles, at build time or per tenant.
+  </a>
+  <a
+    className="bg-muted hover:bg-secondary block rounded-lg border p-4 no-underline"
+    href="./?path=/docs/foundations-colors--docs"
+  >
+    <strong>Read the tokens →</strong>
+    <br />
+    Every role, with its measured contrast ratio.
+  </a>
+</div>
+
+## What is actually in here
+
+| Area              | What you get                                                                                      |
+| ----------------- | ------------------------------------------------------------------------------------------------- |
+| **Components**    | Primitives, forms, data display, overlays, an application frame and two page templates.           |
+| **Tokens**        | A brand reference palette and a semantic role layer over it, both in `theme.css`.                 |
+| **Theming**       | Light and dark, plus per-tenant palettes at runtime. One class and a set of custom properties.    |
+| **Accessibility** | Every token pair measured against WCAG 2.2 AA in CI, and every story scanned by axe in Chromium.  |
+| **Packaging**     | ESM, `'use client'` preserved per module, manifests and entry points checked by publint and attw. |
+| **Lint config**   | `@kubermatic/eslint-config` — shareable on its own, without pulling React or Tailwind along.      |
+
+The component set was chosen by going through the consuming product dashboards
+and taking what they already have, or would have to build. That is the whole
+selection criterion: nothing here is speculative.
+
+## Component status
+
+Components are labelled so a product knows what it is committing to. Anything
+listed **Stable** follows semver: a breaking change to it needs a major.
+**Beta** means the API is expected to hold but has not yet been through a
+product migration, so a rename is possible in a minor.
+
+| Group          | Components                                                                                                                               | Status |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| **Primitives** | `Button` `Badge` `Text`                                                                                                                  | Stable |
+| **Primitives** | `Separator` `Spinner` `Skeleton` `Avatar` `Code` `CodeBlock` `CopyButton` `ScrollArea`                                                   | Beta   |
+| **Forms**      | `Field` `Input` `Textarea` `Select` `FilterSelect` `Combobox` `Checkbox` `Switch` `RadioGroup` `ToggleGroup` `KeyValueEditor` `TagInput` | Beta   |
+| **Data**       | `Card` `Table` `DataTable` `DescriptionList` `Timeline` `StatusBadge` `StatusDot`                                                        | Beta   |
+| **Feedback**   | `Alert` `EmptyState` `ErrorState` `Toast`                                                                                                | Beta   |
+| **Overlays**   | `Dialog` `ConfirmDialog` `Drawer` `Popover` `Tooltip` `Menu`                                                                             | Beta   |
+| **Navigation** | `Tabs` `Breadcrumbs` `Sidebar`                                                                                                           | Beta   |
+| **App frame**  | `BrandProvider` `Logo` `AppShell` `AppHeader` `AppFooter` `UserMenu` `ThemeToggle` `SkipLink`                                            | Beta   |
+| **Templates**  | `Page` `PageHeader` `Section` `ListPage` `DetailPage`                                                                                    | Beta   |
+
+Deliberately absent: a **YAML/manifest editor** (Monaco and CodeMirror are
+megabyte-scale, and every consumer of `Button` would pay for them — `CodeBlock`
+covers the read-only case), **charts and graph views** (one product each, so
+there is no shared shape yet), and **`ErrorBoundary`** (it has to know how the
+app routes to reset itself; `ErrorState` is the presentational half).
+
+## Two things you will want to know early
+
+**Per-product logos go through `BrandProvider`.** The kit ships no artwork, for
+the same reason it ships no font files. Mount the provider once at your app
+root with your product's `logo`, `mark`, `company` and `docsUrl`, and the
+header, sidebar and footer read them from context — see **App Frame → Brand**.
+
+`useBrand()` throws without it, so this is not optional and cannot fail
+quietly. This catalogue is a consumer like any product: it mounts its own
+provider in `.storybook/with-brand.tsx`, with no artwork, which is why the
+default a story shows is the wordmark-and-initials fallback.
+
+**`AppShell` has a `layout` prop.** Both products are "a sidebar, a header and
+a content area" and disagree about which of the two spans the corner, so
+`sidebar-first` and `header-first` are both first-class. See
+**App Frame → AppShell**.
+
+## The one idea worth reading first
+
+**Components reference semantic roles, never colours.** `Button` is
+`bg-primary text-primary-foreground` and has no idea what colour that is.
+
+Everything else follows from it. Dark mode is the same components reading
+different values. A tenant palette is the same components reading different
+values. The WCAG guarantees hold at the token level, so they hold for every
+component at once. And a component that hardcodes `#0081AE` quietly opts out of
+all three — which is why a lint rule rejects it.
+
+## Where things live
+
+```
+packages/ui-kit/          @kubermatic/ui-kit — tokens, theming, components
+packages/eslint-config/   @kubermatic/eslint-config — the shared flat config
+.storybook/               this catalogue, over every package
+```

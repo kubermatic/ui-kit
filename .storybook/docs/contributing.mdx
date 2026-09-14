@@ -1,0 +1,71 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Guides/Contributing" />
+
+# Contributing
+
+The full guide lives in
+[CONTRIBUTING.md](https://github.com/kubermatic/ui-kit/blob/main/CONTRIBUTING.md).
+This page is the part a product team needs before opening a pull request
+against a library four other teams depend on.
+
+## Proposing a component
+
+Ask first, in an issue. A component in a shared kit is a permanent commitment
+for everyone, and the wrong ones are much more expensive than the missing ones.
+Three questions decide it:
+
+1. **Is it needed by more than one product?** If not, it belongs in that
+   product. A component with one consumer is a component with one opinion.
+2. **Does Base UI already have the primitive?** If it does, we style that
+   rather than reimplement its keyboard handling and ARIA wiring — the part
+   that is easy to get subtly wrong and hard to notice.
+3. **Can it be built from existing roles?** A component that needs a new colour
+   needs a new _measured_ colour, in both palettes, which is a bigger change
+   than the component.
+
+## The rules that are enforced rather than documented
+
+Lint rules, not conventions, because a convention in a shared repo is a thing
+new contributors have to be told:
+
+| Rule                            | What it stops                                                                                             |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `kubermatic/no-color-literals`  | A hardcoded colour, which escapes theming _and_ the WCAG checks.                                          |
+| `kubermatic/require-use-client` | A missing directive, which breaks in the consumer's build.                                                |
+| `kubermatic/license-header`     | A file without the Apache-2.0 grant.                                                                      |
+| `no-restricted-imports`         | A `@/` alias in shipped source — it survives into the emitted `.d.ts` and does not resolve for consumers. |
+
+`npm run lint:fix` fixes most of them, including stamping the licence header.
+
+## Two habits that matter more than they look
+
+**Use `variantKeys<T>` for variant lists in stories.** It takes a
+`Record<T, true>`, so a variant added to a component's `cva` config but not to
+its story fails typecheck. Unrendered means unscanned by axe and unreviewed on
+a palette change, and nothing else would have caught it.
+
+**Add a `globals: { theme: 'dark' }` counterpart.** The accessibility run
+renders each story once, at one theme. Without a dark counterpart the dark
+palette is never scanned — and the dark palette is exactly where `--primary`
+flips from carrying white text to carrying dark text.
+
+## Changesets
+
+Any change that reaches a consumer needs one: `npm run changeset`. Releases are
+generated from them, so a PR without one ships nothing.
+
+Describe the change **for someone upgrading**, not for someone reading the
+diff. "fix button" is worth nothing to the person whose build just broke.
+
+A token value change is a **minor**, not a patch. The palette is part of the
+contract, and somebody's screenshot tests will notice.
+
+## Before you push
+
+```bash
+npm run verify
+```
+
+Lint → typecheck → unit and accessibility tests → build → package and consumer
+checks. Exactly what CI runs, so there are no surprises waiting on the PR.

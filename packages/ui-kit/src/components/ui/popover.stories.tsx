@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 The Kubermatic ui-kit Authors.
+ * Copyright 2026 The Kubermatic Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,26 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, screen, waitFor } from 'storybook/test';
+import { Filter } from 'lucide-react';
 
 import { Button } from './button';
+import { Field } from './field';
+import { Input } from './input';
 import {
   Popover,
+  PopoverClose,
   PopoverContent,
   PopoverDescription,
-  PopoverHeader,
   PopoverTitle,
   PopoverTrigger,
 } from './popover';
 
-const SIDES = ['top', 'right', 'bottom', 'left'] as const;
-
 const meta = {
-  title: 'Primitives/Popover',
+  title: 'Overlays/Popover',
   component: Popover,
-  parameters: { layout: 'centered' },
+  parameters: {
+    layout: 'centered',
+    docs: {
+      description: {
+        component:
+          'An anchored panel with interactive content. Distinct from `Tooltip`, which is a ' +
+          'description and cannot hold anything focusable, and from `Menu`, which is a list ' +
+          'of commands with arrow-key navigation. This is the one that holds a form — ' +
+          'An organisation selector and a metadata filter are both popovers.',
+      },
+    },
+  },
 } satisfies Meta<typeof Popover>;
 
 export default meta;
@@ -42,82 +52,37 @@ export const Playground: Story = {
   render: () => (
     <Popover>
       <PopoverTrigger
-        render={<Button variant="outline">Node details</Button>}
+        render={
+          <Button variant="outline">
+            <Filter />
+            Filter by label
+          </Button>
+        }
       />
-      <PopoverContent>
-        <PopoverHeader>
-          <PopoverTitle>worker-03</PopoverTitle>
-          <PopoverDescription>
-            Ready · 12 pods · kernel 6.8.0-45-generic
-          </PopoverDescription>
-        </PopoverHeader>
-      </PopoverContent>
-    </Popover>
-  ),
-};
-
-export const Open: Story = {
-  render: () => (
-    <Popover defaultOpen>
-      <PopoverTrigger
-        render={<Button variant="outline">Node details</Button>}
-      />
-      <PopoverContent>
-        <PopoverHeader>
-          <PopoverTitle>worker-03</PopoverTitle>
-          <PopoverDescription>Ready · 12 pods</PopoverDescription>
-        </PopoverHeader>
-      </PopoverContent>
-    </Popover>
-  ),
-  play: async () => {
-    /*
-     * `waitFor` around the visibility check, not just `findByText`: the popup is
-     * in the DOM one frame before `animate-in`/`fade-in-0` has taken it off
-     * opacity 0, so a one-shot `toBeVisible` races the entry animation.
-     */
-    await waitFor(async () => {
-      await expect(screen.getByText('worker-03')).toBeVisible();
-    });
-  },
-};
-
-/**
- * All four sides at once.
- *
- * Each carries its own `data-[side=*]` slide-in variant and feeds
- * `origin-(--transform-origin)`, so a story showing only the default `bottom`
- * leaves three of the four animation paths unexercised.
- *
- * Each popover gets a fixed-size cell rather than sharing a flow with margins:
- * the positioner flips a side when it runs out of room, which would silently
- * render the opposite of what the label claims. A cell wide enough for trigger
- * plus popup makes the layout independent of the canvas width.
- */
-export const Sides: Story = {
-  parameters: { layout: 'fullscreen' },
-  render: () => (
-    <div className="flex flex-wrap justify-center">
-      {SIDES.map((side) => (
-        <div
-          key={side}
-          className="flex h-56 w-[30rem] items-center justify-center"
-        >
-          <Popover defaultOpen>
-            <PopoverTrigger
-              render={<Button variant="outline">{side}</Button>}
+      <PopoverContent align="start" className="w-80">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1">
+            <PopoverTitle>Filter by label</PopoverTitle>
+            <PopoverDescription>Matches are combined with AND.</PopoverDescription>
+          </div>
+          <Field label="Key">
+            <Input placeholder="app" />
+          </Field>
+          <Field label="Value">
+            <Input placeholder="billing" />
+          </Field>
+          <div className="flex justify-end gap-2">
+            <PopoverClose
+              render={
+                <Button variant="outline" size="sm">
+                  Cancel
+                </Button>
+              }
             />
-            <PopoverContent side={side} className="w-56">
-              <PopoverHeader>
-                <PopoverTitle>side={side}</PopoverTitle>
-                <PopoverDescription>
-                  Slides in from the opposite edge.
-                </PopoverDescription>
-              </PopoverHeader>
-            </PopoverContent>
-          </Popover>
+            <Button size="sm">Apply</Button>
+          </div>
         </div>
-      ))}
-    </div>
+      </PopoverContent>
+    </Popover>
   ),
 };

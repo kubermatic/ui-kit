@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 The Kubermatic ui-kit Authors.
+ * Copyright 2026 The Kubermatic Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,55 +13,67 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 'use client';
 
-import { useRender } from '@base-ui/react';
 import { cva, type VariantProps } from 'class-variance-authority';
+import type { ElementType } from 'react';
 
-import { cn } from '@/lib/utils';
+import type { PolymorphicProps } from '../../lib/polymorphic.js';
+import { cn } from '../../lib/utils.js';
 
-const badgeVariants = cva(
-  'inline-flex w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3',
+/**
+ * Badge — the home for the brand's highlight colours.
+ *
+ * Teal, Rosé and Honey are specified as highlights, and they are only legible
+ * that way: each measures under 3:1 against white, so none can be text or a
+ * functional border on a light background. As a filled surface carrying Dark
+ * Azure they measure 10.67:1, 7.35:1 and 10.11:1 — which is what these
+ * variants do.
+ */
+export const badgeVariants = cva(
+  [
+    'inline-flex w-fit shrink-0 items-center justify-center gap-1 overflow-hidden',
+    'rounded-md border border-transparent px-2 py-0.5',
+    'font-sans text-xs font-bold whitespace-nowrap',
+    "[&>svg]:pointer-events-none [&>svg:not([class*='size-'])]:size-3",
+  ],
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground [a&]:hover:bg-primary/90',
-        secondary:
-          'bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90',
-        destructive:
-          'bg-destructive text-destructive-foreground focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 [a&]:hover:bg-destructive/90',
-        success: 'bg-success text-success-foreground [a&]:hover:bg-success/90',
-        warning: 'bg-warning text-warning-foreground [a&]:hover:bg-warning/90',
-        info: 'bg-info text-info-foreground [a&]:hover:bg-info/90',
-        outline:
-          'border-border text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground',
-        ghost: '[a&]:hover:bg-accent [a&]:hover:text-accent-foreground',
-        link: 'text-primary underline-offset-4 [a&]:hover:underline',
+        accent: 'bg-accent text-accent-foreground',
+        rose: 'bg-highlight-rose text-highlight-rose-foreground',
+        honey: 'bg-highlight-honey text-highlight-honey-foreground',
+        primary: 'bg-primary text-primary-foreground',
+        destructive: 'bg-destructive text-destructive-foreground',
+        secondary: 'bg-secondary text-secondary-foreground',
+        outline: 'border-border text-foreground',
       },
     },
     defaultVariants: {
-      variant: 'default',
+      variant: 'accent',
     },
   },
 );
 
-function Badge({
-  className,
-  variant = 'default',
-  render,
-  ...props
-}: useRender.ComponentProps<'span'> & VariantProps<typeof badgeVariants>) {
-  return useRender({
-    render,
-    defaultTagName: 'span',
-    props: {
-      'data-slot': 'badge',
-      'data-variant': variant,
-      className: cn(badgeVariants({ variant }), className),
-      ...props,
-    },
-  });
+interface BadgeOwnProps extends VariantProps<typeof badgeVariants> {
+  className?: string;
 }
 
-export { Badge, badgeVariants };
+/**
+ * Polymorphic: `<Badge as="a" href="/tags/prod">` typechecks, and `href` is
+ * offered by autocomplete.
+ */
+export type BadgeProps<T extends ElementType = 'span'> = PolymorphicProps<T, BadgeOwnProps>;
+
+export function Badge<T extends ElementType = 'span'>({
+  className,
+  variant,
+  as,
+  ...props
+}: BadgeProps<T>) {
+  const Component: ElementType = as ?? 'span';
+
+  return (
+    <Component data-slot="badge" className={cn(badgeVariants({ variant }), className)} {...props} />
+  );
+}

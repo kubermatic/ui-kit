@@ -1,0 +1,122 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Guides/Accessibility" />
+
+# Accessibility
+
+What this kit guarantees, how it is checked, and — the part usually left out —
+what the checking does not prove.
+
+## Two independent checks
+
+**1. The palette, computed.** `theme.test.ts` parses `theme.css`, resolves the
+`var()` chains, and computes the WCAG ratio for every pair in the token
+contract, in **both** palettes. It runs in milliseconds with no browser. When
+it fails, the message names the token: _`--muted-foreground` on `--muted` is
+4.38:1, below 4.5:1_.
+
+It also checks the ratios written in the comments beside the tokens. A comment
+that says `4.65:1` next to a colour that no longer measures 4.65:1 fails the
+build, because documentation nobody verifies is documentation that is
+eventually wrong.
+
+**2. The rendered output, scanned.** `npm run test:a11y` renders **every
+story** in headless Chromium and runs axe-core over it. A story _is_ the test:
+add one and it is covered. Violations fail the run.
+
+The ruleset is pinned to the tags that make up WCAG 2.2 Level AA:
+
+```ts
+runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] }
+```
+
+The two overlap, and that is intentional. The computed check knows _which_
+pairs matter but not whether a component actually renders them; axe sees what
+is really painted — including composited backgrounds and opacity — but only
+for the pairs some story happens to produce.
+
+## Why a real browser
+
+`target-size` and `color-contrast` both need layout geometry and computed
+colour. jsdom has neither, so under jsdom those rules are **skipped silently**
+and the suite goes green having never checked the two things most likely to
+break. That is the whole reason the accessibility project pays for a Chromium
+download while the unit tests stay in jsdom.
+
+## What a green run does not prove
+
+**It is a regression guard, not a compliance certificate.** Automated tooling
+catches roughly a third of WCAG failures, and the gap is widest exactly where
+WCAG 2.2 added criteria. In axe-core 4.13 the `wcag22aa` tag resolves to a
+single rule — `target-size`. There is no `wcag22a` tag at all.
+
+| WCAG 2.2 criterion                  | Automatable? |
+| ----------------------------------- | ------------ |
+| 2.4.11 Focus Not Obscured (Minimum) | No           |
+| 2.5.7 Dragging Movements            | No           |
+| 2.5.8 Target Size (Minimum)         | **Yes**      |
+| 3.2.6 Consistent Help               | No           |
+| 3.3.7 Redundant Entry               | No           |
+| 3.3.8 Accessible Authentication     | No           |
+
+The rest are judgements about flows, not snapshots of a DOM. Treat green as
+"no _detectable_ regression" and keep manual keyboard and screen-reader passes
+for anything interactive.
+
+## What the palette does about the brand
+
+Two of the brand colours cannot do the job they are specified for, and the
+token layer is where that is resolved rather than in each component.
+
+**Cerulean fails at exactly its specified use.** `#0081AE` measures 4.42:1 on
+white — 0.08 short of the text minimum — and fails identically as a button
+surface under white text. `--primary` is therefore darkened by 0.012 OKLCH
+lightness to `#007DAA` (4.65:1), a shift of three hex units that is visually
+indistinguishable. `--brand-cerulean` keeps the exact specified value for
+graphic elements, where the threshold is 3:1 and it passes comfortably.
+
+**Teal, Rosé and Honey cannot be text or borders on light backgrounds.** They
+measure 1.77:1, 2.57:1 and 1.87:1 against white — below even the 3:1 non-text
+threshold. As filled surfaces carrying Dark Azure they reach 10.67:1, 7.35:1
+and 10.11:1, which is how the kit exposes them: as `Badge` variants and
+`accent` surfaces. `Text` offers **no** tone for them, so the component API
+cannot produce the violation in the first place.
+
+That last point is the pattern worth copying: where a combination is not
+accessible, the preferred fix is to make it unrepresentable in the API rather
+than to document it as a rule people must remember.
+
+## Opacity tints are not tokens
+
+`bg-destructive/10` composites to a colour that is not in the token set —
+`#14192C` on the dark palette — and Maroon on that measures 4.27:1. The axe run
+caught precisely this in the Showcase story.
+
+Compose from solid roles. If a tinted surface is genuinely needed, it needs its
+own measured foreground token, not a guess.
+
+## Your palette is not covered by any of this
+
+Everything above measures the built-in tokens. A palette supplied through
+`ThemeProvider`'s `tokens` prop is measured by nobody until you measure it —
+see [Theming → A custom palette leaves the verified set](./?path=/docs/guides-theming--docs).
+
+## Checking the harness still bites
+
+A passing suite is only meaningful if failure is possible. Drop a deliberately
+broken story in and confirm it fails:
+
+```tsx
+// packages/ui-kit/src/components/ui/__tripwire.stories.tsx
+export const TargetTooSmall: Story = {
+  render: () => (
+    <div className="flex gap-0">
+      <Button className="size-4 p-0" aria-label="One" />
+      <Button className="size-4 p-0" aria-label="Two" />
+    </div>
+  ),
+};
+```
+
+`npm run test:a11y` should fail with `(target-size)`. Delete the file
+afterwards.

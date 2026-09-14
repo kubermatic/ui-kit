@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 The Kubermatic ui-kit Authors.
+ * Copyright 2026 The Kubermatic Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,288 +13,215 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 'use client';
 
-import * as React from 'react';
-import {
-  Toast as ToastPrimitive,
-  type ToastManagerPromiseOptions,
-  type ToastManagerUpdateOptions,
-} from '@base-ui/react';
-import { cva, type VariantProps } from 'class-variance-authority';
-import {
-  CircleCheckIcon,
-  InfoIcon,
-  Loader2Icon,
-  OctagonXIcon,
-  TriangleAlertIcon,
-  XIcon,
-} from 'lucide-react';
+import { Toast as BaseToast } from '@base-ui/react/toast';
+import { AlertTriangle, CheckCircle2, Info, X, XCircle } from 'lucide-react';
+import { useMemo, type ComponentProps, type ReactNode } from 'react';
 
-import { cn } from '@/lib/utils';
+import { cn } from '../../lib/utils.js';
 
-/**
- * Toasts, on Base UI.
- *
- * The kit previously wrapped `sonner`, which meant a consuming app had to
- * install sonner itself and import `toast` from it — a second package on the
- * boundary, and one more version for three products to disagree about. Base UI
- * is already the engine for every other primitive here, so this removes an
- * external surface rather than adding one.
- *
- * `toast` is a module-level manager, so it can be called from anywhere —
- * an event handler, a mutation callback, a plain function outside React —
- * exactly like sonner's. `<Toaster />` is rendered once near the app root and
- * is what gives those calls somewhere to land.
- */
+/** The tone of a toast, carried in Base UI's `type` field. */
+export type ToastTone = 'info' | 'success' | 'warning' | 'error';
 
-const TYPES = [
-  'default',
-  'success',
-  'info',
-  'warning',
-  'error',
-  'loading',
-] as const;
-
-/** The visual levels a toast can take. `loading` does not auto-dismiss. */
-export type ToastType = (typeof TYPES)[number];
-
-const toastVariants = cva(
-  'group pointer-events-auto relative flex w-full items-start gap-3 rounded-lg border border-l-4 bg-popover p-4 text-popover-foreground shadow-lg transition-all data-ending-style:opacity-0 data-starting-style:opacity-0 data-ending-style:translate-x-4 data-starting-style:translate-x-4',
-  {
-    variants: {
-      type: {
-        /*
-         * Every level keeps the neutral popover surface and signals through the
-         * left border and the icon instead of a tinted background.
-         *
-         * That is a contrast decision, not only an aesthetic one. `bg-popover` /
-         * `text-popover-foreground` is a pairing the token set already proves at
-         * WCAG AA in both themes; a tinted surface per level would be five new
-         * pairings to prove, and axe runs over every story at `test: 'error'`.
-         * Borders carry no contrast requirement, so the level stays legible
-         * without putting the body text at risk.
-         */
-        default: 'border-l-border',
-        success: 'border-l-success',
-        info: 'border-l-info',
-        warning: 'border-l-warning',
-        error: 'border-l-destructive',
-        loading: 'border-l-muted-foreground',
-      },
-    },
-    defaultVariants: {
-      type: 'default',
-    },
-  },
-);
-
-const ICONS: Record<ToastType, React.ReactNode> = {
-  default: null,
-  success: <CircleCheckIcon className="text-success size-4 shrink-0" />,
-  info: <InfoIcon className="text-info size-4 shrink-0" />,
-  warning: <TriangleAlertIcon className="text-warning size-4 shrink-0" />,
-  error: <OctagonXIcon className="text-destructive size-4 shrink-0" />,
-  loading: (
-    <Loader2Icon className="text-muted-foreground size-4 shrink-0 animate-spin" />
-  ),
-};
-
-function isToastType(value: string | undefined): value is ToastType {
-  return TYPES.includes(value as ToastType);
-}
-
-/* -------------------------------------------------------------- the manager */
+const TONE_ICON = {
+  info: Info,
+  success: CheckCircle2,
+  warning: AlertTriangle,
+  error: XCircle,
+} as const satisfies Record<ToastTone, unknown>;
 
 /*
- * Created at module scope, so `toast(...)` works without a hook and without the
- * caller being inside the provider — which is the whole ergonomic point.
+ * Outlined rather than tinted, for the reason `Alert` documents: a wash is an
+ * opacity composite, and a composite is a colour outside the token set.
  */
-const manager = ToastPrimitive.createToastManager();
+const TONE_CLASSES = {
+  info: 'border-primary [&_[data-slot=toast-icon]]:text-primary',
+  success: 'border-success [&_[data-slot=toast-icon]]:text-success',
+  warning: 'border-warning [&_[data-slot=toast-icon]]:text-warning',
+  error: 'border-destructive [&_[data-slot=toast-icon]]:text-destructive',
+} as const satisfies Record<ToastTone, string>;
 
-/** Options accepted by every `toast.*` call. Mirrors Base UI's add options. */
-export type ToastOptions = Omit<
-  Parameters<typeof manager.add>[0],
-  'title' | 'type'
->;
-
-function add(type: ToastType, title: React.ReactNode, options?: ToastOptions) {
-  return manager.add({ ...options, title, type });
-}
+const isTone = (value: string | undefined): value is ToastTone =>
+  value === 'info' || value === 'success' || value === 'warning' || value === 'error';
 
 /**
- * Normalises the string shorthand `promise()` accepts.
+ * ToastProvider — holds the queue. Mount once, above anything that toasts.
  *
- * Base UI expands a bare string into `{ description }`. Every other entry point
- * here expands one into `{ title }`, and the inconsistency is not cosmetic:
- * `Toast.Root` renders `role="dialog"` and takes its accessible name from the
- * title, so a description-only toast is an unnamed dialog. axe fails it, and a
- * screen reader announces a body with nothing identifying it.
- *
- * So `toast.promise(p, { loading: 'Creating…' })` puts that string where
- * `toast.loading('Creating…')` puts it.
+ * `limit` defaults to 3 rather than Base UI's 5: a Kubernetes dashboard that
+ * fails a list call for six namespaces will try to toast six times, and a
+ * stack tall enough to cover the button you were aiming at is worse than a
+ * truncated one.
  */
-function asTitle(
-  value: string | ToastManagerUpdateOptions<any>,
-): ToastManagerUpdateOptions<any> {
-  return typeof value === 'string' ? { title: value } : value;
+export function ToastProvider({
+  limit = 3,
+  timeout = 5000,
+  ...props
+}: ComponentProps<typeof BaseToast.Provider>) {
+  return <BaseToast.Provider limit={limit} timeout={timeout} {...props} />;
 }
 
-function asTitleResult<Value>(
-  value:
-    | string
-    | ToastManagerUpdateOptions<any>
-    | ((result: Value) => string | ToastManagerUpdateOptions<any>),
-) {
-  return typeof value === 'function'
-    ? (result: Value) =>
-        asTitle(
-          (value as (result: Value) => string | ToastManagerUpdateOptions<any>)(
-            result,
-          ),
-        )
-    : asTitle(value);
+export interface ToasterProps {
+  /** Corner the stack grows from. */
+  position?: 'top-right' | 'top-center' | 'bottom-right' | 'bottom-center';
+  className?: string;
 }
+
+const POSITION_CLASSES = {
+  'top-right': 'top-4 right-4',
+  'top-center': 'top-4 left-1/2 -translate-x-1/2',
+  'bottom-right': 'right-4 bottom-4',
+  'bottom-center': 'bottom-4 left-1/2 -translate-x-1/2',
+} as const;
 
 /**
- * Show a toast.
+ * Toaster — renders the queue. One per app, inside `ToastProvider`.
  *
- * ```ts
- * toast('Snapshot scheduled');
- * toast.error('Failed to attach volume', { description: 'quota exceeded' });
- * toast.promise(createSnapshot(), { loading: '…', success: 'Done', error: 'Failed' });
- * ```
+ * The viewport is a labelled region rather than a bare div, so a keyboard user
+ * can reach the toasts with F6 and a screen reader announces what the region
+ * is. Base UI handles the announcement of each toast: `error` and `warning`
+ * are queued at `high` priority by `useToast` below, which makes them
+ * assertive, and the quiet ones are polite.
  */
-const toast = Object.assign(
-  (title: React.ReactNode, options?: ToastOptions) =>
-    add('default', title, options),
-  {
-    success: (title: React.ReactNode, options?: ToastOptions) =>
-      add('success', title, options),
-    info: (title: React.ReactNode, options?: ToastOptions) =>
-      add('info', title, options),
-    warning: (title: React.ReactNode, options?: ToastOptions) =>
-      add('warning', title, options),
-    error: (title: React.ReactNode, options?: ToastOptions) =>
-      add('error', title, options),
-    /** Does not auto-dismiss — Base UI skips the timer for `loading`. */
-    loading: (title: React.ReactNode, options?: ToastOptions) =>
-      add('loading', title, options),
-    /**
-     * Swaps a loading toast for a success or error one when the promise
-     * settles. Base UI assigns the three types itself, so the levels line up
-     * with the ones above without this having to restate them.
-     */
-    promise: <Value,>(
-      promise: Promise<Value>,
-      options: ToastManagerPromiseOptions<Value, any>,
-    ) =>
-      manager.promise(promise, {
-        loading: asTitle(options.loading),
-        success: asTitleResult<Value>(options.success),
-        error: asTitleResult<any>(options.error),
-      }),
-    /** Dismiss one toast by id, or all of them when called with no argument. */
-    dismiss: manager.close,
-    update: manager.update,
-  },
-);
-
-/* ------------------------------------------------------------- the renderer */
+export function Toaster({ position = 'bottom-right', className }: ToasterProps) {
+  return (
+    <BaseToast.Portal>
+      <BaseToast.Viewport
+        data-slot="toaster"
+        className={cn(
+          'fixed z-100 flex w-[calc(100vw-2rem)] flex-col gap-2 sm:w-90',
+          POSITION_CLASSES[position],
+          className,
+        )}
+      >
+        <ToastList />
+      </BaseToast.Viewport>
+    </BaseToast.Portal>
+  );
+}
 
 function ToastList() {
-  const { toasts } = ToastPrimitive.useToastManager();
+  const { toasts } = BaseToast.useToastManager();
 
-  return toasts.map((item) => {
-    const type = isToastType(item.type) ? item.type : 'default';
+  return toasts.map((toast) => {
+    const tone: ToastTone = isTone(toast.type) ? toast.type : 'info';
+    const Icon = TONE_ICON[tone];
 
     return (
-      <ToastPrimitive.Root
-        key={item.id}
-        toast={item}
+      <BaseToast.Root
+        key={toast.id}
+        toast={toast}
         data-slot="toast"
-        /*
-         * Base UI labels the dialog from its title. A toast built by hand with
-         * only a description would have no accessible name at all, so fall back
-         * rather than emit an unnamed dialog — `asTitle` keeps this from firing
-         * on anything the `toast.*` API produces.
-         */
-        aria-label={item.title ? undefined : 'Notification'}
-        className={cn(toastVariants({ type }))}
+        data-tone={tone}
+        className={cn(
+          'grid grid-cols-[auto_1fr_auto] items-start gap-x-3 gap-y-1',
+          'rounded-md border-2 bg-background p-4 text-foreground shadow-lg',
+          'transition-[transform,opacity]',
+          'data-starting-style:translate-x-full data-starting-style:opacity-0',
+          'data-ending-style:translate-x-full data-ending-style:opacity-0',
+          TONE_CLASSES[tone],
+        )}
       >
-        {ICONS[type]}
+        <span
+          data-slot="toast-icon"
+          aria-hidden="true"
+          className="row-span-2 pt-0.5 [&_svg]:size-4"
+        >
+          <Icon />
+        </span>
 
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <ToastPrimitive.Title
-            data-slot="toast-title"
-            className="text-sm leading-tight font-medium"
-          />
-          <ToastPrimitive.Description
-            data-slot="toast-description"
-            className="text-muted-foreground text-sm leading-snug"
-          />
-          {item.actionProps ? (
-            <ToastPrimitive.Action
-              data-slot="toast-action"
-              className="text-primary mt-1 self-start text-sm font-medium underline-offset-4 hover:underline"
+        <div className="col-start-2 flex min-w-0 flex-col gap-1">
+          {toast.title ? (
+            <BaseToast.Title className="font-sans text-sm leading-none font-semibold" />
+          ) : null}
+          {toast.description ? (
+            <BaseToast.Description className="font-sans text-sm break-words text-muted-foreground" />
+          ) : null}
+          {toast.actionProps ? (
+            <BaseToast.Action
+              className={cn(
+                'mt-1 w-fit rounded-sm font-sans text-sm font-medium text-primary underline-offset-4',
+                'outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50',
+              )}
             />
           ) : null}
         </div>
 
-        <ToastPrimitive.Close
-          data-slot="toast-close"
-          aria-label="Close notification"
-          className="text-muted-foreground hover:text-foreground focus-visible:ring-ring rounded-sm opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-2 focus-visible:outline-none"
+        <BaseToast.Close
+          aria-label="Dismiss"
+          className={cn(
+            'col-start-3 row-start-1 flex size-6 items-center justify-center rounded-sm',
+            'text-muted-foreground transition-colors outline-none',
+            'hover:bg-secondary hover:text-secondary-foreground',
+            'focus-visible:ring-[3px] focus-visible:ring-ring/50',
+          )}
         >
-          <XIcon className="size-4" />
-        </ToastPrimitive.Close>
-      </ToastPrimitive.Root>
+          <X className="size-3.5" />
+        </BaseToast.Close>
+      </BaseToast.Root>
     );
   });
 }
 
-export interface ToasterProps {
-  /** Milliseconds before a toast auto-dismisses. `0` disables it. */
+export interface ToastOptions {
+  description?: ReactNode;
+  /** `0` keeps it up until dismissed. */
   timeout?: number;
-  /** How many toasts are shown at once before older ones are marked limited. */
-  limit?: number;
-  /** Extra classes for the viewport — use to move it off the bottom-right. */
-  className?: string;
+  /** A single action — "Undo", "View". */
+  action?: { label: string; onClick: () => void };
+  id?: string;
+}
+
+export interface UseToastResult {
+  info: (title: ReactNode, options?: ToastOptions) => string;
+  success: (title: ReactNode, options?: ToastOptions) => string;
+  warning: (title: ReactNode, options?: ToastOptions) => string;
+  error: (title: ReactNode, options?: ToastOptions) => string;
+  /** Closes one toast, or all of them when called with no id. */
+  dismiss: (id?: string) => void;
+  /** The underlying manager, for `promise()` and `update()`. */
+  manager: ReturnType<typeof BaseToast.useToastManager>;
 }
 
 /**
- * Mount once, near the app root. Everything `toast()` produces renders here.
+ * useToast — the calling convention both products already use.
  *
- * Unlike the sonner wrapper this replaces, it takes no `theme` prop and reads
- * no theme library. Toasts are styled from the same tokens as everything else,
- * so they follow the `.dark` class the app already toggles — which works
- * whether or not that app uses next-themes.
+ * `toast.success('Secret created')` rather than
+ * `add({ type: 'success', title: … })`, because that is what the ~200 call
+ * sites in the two apps look like today (one has a Zustand store with exactly
+ * this shape, the other calls Sonner). Keeping the shape means migrating
+ * them is a change of import.
+ *
+ * `error` and `warning` are queued at `high` priority, which is what makes
+ * them assertive live regions. A failure that is only announced politely can
+ * sit unread behind whatever the user was already being told.
  */
-function Toaster({ timeout, limit, className }: ToasterProps) {
-  return (
-    <ToastPrimitive.Provider
-      toastManager={manager}
-      timeout={timeout}
-      limit={limit}
-    >
-      <ToastPrimitive.Portal>
-        <ToastPrimitive.Viewport
-          data-slot="toast-viewport"
-          className={cn(
-            'fixed right-4 bottom-4 z-100 flex w-[360px] max-w-[calc(100vw-2rem)] flex-col gap-2',
-            // The viewport spans a region the user may need to click through.
-            'pointer-events-none',
-            className,
-          )}
-        >
-          <ToastList />
-        </ToastPrimitive.Viewport>
-      </ToastPrimitive.Portal>
-    </ToastPrimitive.Provider>
-  );
-}
+export function useToast(): UseToastResult {
+  const manager = BaseToast.useToastManager();
 
-export { Toaster, toast, toastVariants };
-export type ToastVariantProps = VariantProps<typeof toastVariants>;
+  return useMemo(() => {
+    const create =
+      (tone: ToastTone) =>
+      (title: ReactNode, options: ToastOptions = {}) =>
+        manager.add({
+          title,
+          description: options.description,
+          type: tone,
+          timeout: options.timeout,
+          id: options.id,
+          priority: tone === 'error' || tone === 'warning' ? 'high' : 'low',
+          actionProps: options.action
+            ? { children: options.action.label, onClick: options.action.onClick }
+            : undefined,
+        });
+
+    return {
+      info: create('info'),
+      success: create('success'),
+      warning: create('warning'),
+      error: create('error'),
+      dismiss: (id?: string) => manager.close(id),
+      manager,
+    };
+  }, [manager]);
+}

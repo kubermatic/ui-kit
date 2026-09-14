@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 The Kubermatic ui-kit Authors.
+ * Copyright 2026 The Kubermatic Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,35 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import type { VariantProps } from 'class-variance-authority';
-import { Activity, HardDrive, Network, Terminal } from 'lucide-react';
 
-import { variantKeys } from '@/test/variant-matrix';
-import { Badge } from './badge';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-  tabsListVariants,
-} from './tabs';
-
-type TabsListVariant = NonNullable<
-  VariantProps<typeof tabsListVariants>['variant']
->;
-
-const VARIANTS = variantKeys<TabsListVariant>({ default: true, line: true });
+import { Tabs, TabsList, TabsPanel, TabsTab } from './tabs';
 
 const meta = {
-  title: 'Primitives/Tabs',
+  title: 'Navigation/Tabs',
   component: Tabs,
-  parameters: { layout: 'padded' },
-  argTypes: {
-    orientation: {
-      control: 'inline-radio',
-      options: ['horizontal', 'vertical'],
+  parameters: {
+    docs: {
+      description: {
+        component:
+          "The detail-page section switcher. One product's `DetailTabs` is a row of " +
+          '`<button>`s with an `onChange`, which gives no `role="tablist"`, no arrow-key ' +
+          'movement between tabs, and no `aria-controls` linking a tab to its panel — so a ' +
+          'screen reader announces four unrelated buttons and the panel below them is not ' +
+          'connected to any of them.\n\n' +
+          'Base UI activates on Enter rather than on arrow-key focus. That is the right ' +
+          'default for tabs whose panels cost something to render: automatic activation ' +
+          "would fetch every tab's data on the way past it.\n\n" +
+          'Two visual variants, because both products have both: `underline` for page-level ' +
+          'sections, `pill` for a segmented switch inside a panel.',
+      },
     },
   },
 } satisfies Meta<typeof Tabs>;
@@ -49,101 +42,56 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-function Panels() {
-  return (
-    <>
-      <TabsContent value="overview">
-        <dl className="grid max-w-sm grid-cols-2 gap-y-2 text-sm">
-          <dt className="text-muted-foreground">Node</dt>
-          <dd>worker-03</dd>
-          <dt className="text-muted-foreground">IP</dt>
-          <dd className="font-mono text-xs">10.244.2.17</dd>
-          <dt className="text-muted-foreground">Status</dt>
-          <dd>
-            <Badge variant="success">Running</Badge>
-          </dd>
-        </dl>
-      </TabsContent>
-      <TabsContent value="storage" className="text-sm">
-        One data volume on csi-rbd, 40 GiB.
-      </TabsContent>
-      <TabsContent value="network" className="text-sm">
-        Attached to the pod network; no additional interfaces.
-      </TabsContent>
-      <TabsContent value="console" className="text-sm">
-        Serial console is available while the VM is running.
-      </TabsContent>
-    </>
-  );
-}
+export const Underline: Story = {
+  render: () => (
+    <div className="w-[36rem]">
+      <Tabs defaultValue="overview" className="flex flex-col gap-4">
+        <TabsList>
+          <TabsTab value="overview">Overview</TabsTab>
+          <TabsTab value="yaml">YAML</TabsTab>
+          <TabsTab value="events">Events</TabsTab>
+          <TabsTab value="conditions">Conditions</TabsTab>
+        </TabsList>
+        <TabsPanel value="overview" className="font-sans text-sm text-muted-foreground">
+          Two keys, refreshed hourly from vault-backend.
+        </TabsPanel>
+        <TabsPanel value="yaml" className="font-sans text-sm text-muted-foreground">
+          The rendered manifest.
+        </TabsPanel>
+        <TabsPanel value="events" className="font-sans text-sm text-muted-foreground">
+          Recent Kubernetes events.
+        </TabsPanel>
+        <TabsPanel value="conditions" className="font-sans text-sm text-muted-foreground">
+          Status conditions reported by the controller.
+        </TabsPanel>
+      </Tabs>
+    </div>
+  ),
+};
 
-export const Playground: Story = {
-  args: { orientation: 'horizontal' },
-  render: (args) => (
-    <Tabs {...args} defaultValue="overview">
-      <TabsList>
-        <TabsTrigger value="overview">
-          <Activity />
-          Overview
-        </TabsTrigger>
-        <TabsTrigger value="storage">
-          <HardDrive />
-          Storage
-        </TabsTrigger>
-        <TabsTrigger value="network">
-          <Network />
-          Network
-        </TabsTrigger>
-        <TabsTrigger value="console" disabled>
-          <Terminal />
-          Console
-        </TabsTrigger>
+export const Pill: Story = {
+  render: () => (
+    <Tabs defaultValue="form" className="flex flex-col gap-4">
+      <TabsList variant="pill">
+        <TabsTab value="form" variant="pill">
+          Form
+        </TabsTab>
+        <TabsTab value="yaml" variant="pill">
+          YAML
+        </TabsTab>
       </TabsList>
-      <Panels />
+      <TabsPanel value="form" className="font-sans text-sm text-muted-foreground">
+        A generated form.
+      </TabsPanel>
+      <TabsPanel value="yaml" className="font-sans text-sm text-muted-foreground">
+        The raw manifest.
+      </TabsPanel>
     </Tabs>
   ),
 };
 
-/**
- * `line` drops the filled pill for an underline drawn by the trigger's `after`
- * pseudo-element — which is why it needs its own story: the active indicator is
- * a different mechanism, not a different colour.
- */
-export const Variants: Story = {
-  render: () => (
-    <div className="flex flex-col gap-8">
-      {VARIANTS.map((variant) => (
-        <Tabs key={variant} defaultValue="overview">
-          <TabsList variant={variant}>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="storage">Storage</TabsTrigger>
-            <TabsTrigger value="network">Network</TabsTrigger>
-          </TabsList>
-          <Panels />
-        </Tabs>
-      ))}
-    </div>
-  ),
-};
-
-/**
- * The vertical path is entirely separate CSS — the list stacks, triggers go
- * full-width and left-aligned, and the `line` indicator moves to the right
- * edge. Covering only `horizontal` leaves all of that untested.
- */
-export const Vertical: Story = {
-  render: () => (
-    <div className="flex flex-col gap-8">
-      {VARIANTS.map((variant) => (
-        <Tabs key={variant} orientation="vertical" defaultValue="overview">
-          <TabsList variant={variant}>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="storage">Storage</TabsTrigger>
-            <TabsTrigger value="network">Network</TabsTrigger>
-          </TabsList>
-          <Panels />
-        </Tabs>
-      ))}
-    </div>
-  ),
+export const UnderlineDark: Story = {
+  globals: { theme: 'dark' },
+  tags: ['!autodocs'],
+  render: Underline.render,
 };

@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 The Kubermatic ui-kit Authors.
+ * Copyright 2026 The Kubermatic Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,43 +13,42 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 'use client';
 
-import * as React from 'react';
+import type { ComponentProps } from 'react';
 
-import { cn } from '@/lib/utils';
+import { cn } from '../../lib/utils.js';
 
-function Table({
-  className,
-  containerClassName,
-  ...props
-}: React.ComponentProps<'table'> & { containerClassName?: string }) {
+/**
+ * Table — the semantic table elements, styled.
+ *
+ * A real `<table>`, not a grid of divs. Row and column headers are what let a
+ * screen reader announce "Status, Degraded" instead of "Degraded", and there
+ * is no ARIA that reproduces that as well as the element does.
+ *
+ * The wrapper scrolls horizontally rather than letting the table squash: a
+ * Kubernetes resource table has eight columns and no responsive breakpoint
+ * makes that fit a phone. `tabindex` is not set on the wrapper because the
+ * rows contain focusable cells; if you render a table of plain text wide
+ * enough to scroll, add it so keyboard users can reach the overflow.
+ */
+export function Table({ className, ...props }: ComponentProps<'table'>) {
   return (
-    <div
-      data-slot="table-container"
-      className={cn('relative w-full overflow-x-auto', containerClassName)}
-    >
+    <div data-slot="table-container" className="relative w-full overflow-x-auto">
       <table
         data-slot="table"
-        className={cn('w-full caption-bottom text-sm', className)}
+        className={cn('w-full caption-bottom border-collapse font-sans text-sm', className)}
         {...props}
       />
     </div>
   );
 }
 
-function TableHeader({ className, ...props }: React.ComponentProps<'thead'>) {
-  return (
-    <thead
-      data-slot="table-header"
-      className={cn('[&_tr]:border-b', className)}
-      {...props}
-    />
-  );
+export function TableHeader({ className, ...props }: ComponentProps<'thead'>) {
+  return <thead data-slot="table-header" className={cn('[&_tr]:border-b', className)} {...props} />;
 }
 
-function TableBody({ className, ...props }: React.ComponentProps<'tbody'>) {
+export function TableBody({ className, ...props }: ComponentProps<'tbody'>) {
   return (
     <tbody
       data-slot="table-body"
@@ -59,25 +58,23 @@ function TableBody({ className, ...props }: React.ComponentProps<'tbody'>) {
   );
 }
 
-function TableFooter({ className, ...props }: React.ComponentProps<'tfoot'>) {
+export function TableFooter({ className, ...props }: ComponentProps<'tfoot'>) {
   return (
     <tfoot
       data-slot="table-footer"
-      className={cn(
-        'bg-muted/50 border-t font-medium [&>tr]:last:border-b-0',
-        className,
-      )}
+      className={cn('border-t bg-muted font-medium [&>tr]:last:border-b-0', className)}
       {...props}
     />
   );
 }
 
-function TableRow({ className, ...props }: React.ComponentProps<'tr'>) {
+export function TableRow({ className, ...props }: ComponentProps<'tr'>) {
   return (
     <tr
       data-slot="table-row"
       className={cn(
-        'hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors',
+        'border-b border-border transition-colors',
+        'hover:bg-muted data-[state=selected]:bg-muted',
         className,
       )}
       {...props}
@@ -85,12 +82,13 @@ function TableRow({ className, ...props }: React.ComponentProps<'tr'>) {
   );
 }
 
-function TableHead({ className, ...props }: React.ComponentProps<'th'>) {
+export function TableHead({ className, ...props }: ComponentProps<'th'>) {
   return (
     <th
       data-slot="table-head"
       className={cn(
-        'text-foreground h-10 px-2 text-left align-middle font-medium whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]',
+        'h-10 px-3 text-left align-middle font-medium whitespace-nowrap text-muted-foreground',
+        '[&:has([role=checkbox])]:w-0 [&:has([role=checkbox])]:pr-0',
         className,
       )}
       {...props}
@@ -98,12 +96,13 @@ function TableHead({ className, ...props }: React.ComponentProps<'th'>) {
   );
 }
 
-function TableCell({ className, ...props }: React.ComponentProps<'td'>) {
+export function TableCell({ className, ...props }: ComponentProps<'td'>) {
   return (
     <td
       data-slot="table-cell"
       className={cn(
-        'p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]',
+        'px-3 py-2 align-middle',
+        '[&:has([role=checkbox])]:w-0 [&:has([role=checkbox])]:pr-0',
         className,
       )}
       {...props}
@@ -111,26 +110,12 @@ function TableCell({ className, ...props }: React.ComponentProps<'td'>) {
   );
 }
 
-function TableCaption({
-  className,
-  ...props
-}: React.ComponentProps<'caption'>) {
+export function TableCaption({ className, ...props }: ComponentProps<'caption'>) {
   return (
     <caption
       data-slot="table-caption"
-      className={cn('text-muted-foreground mt-4 text-sm', className)}
+      className={cn('mt-4 text-sm text-muted-foreground', className)}
       {...props}
     />
   );
 }
-
-export {
-  Table,
-  TableHeader,
-  TableBody,
-  TableFooter,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableCaption,
-};

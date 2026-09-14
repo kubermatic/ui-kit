@@ -1,0 +1,72 @@
+name: Bug report
+description: Something in the kit does not behave as documented.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before filing: three problems account for most reports, and all three
+        are install-side. Check them first — the
+        [Installation guide](https://kubermatic.github.io/ui-kit/?path=/docs/guides-installation--docs)
+        has the detail.
+
+        | Symptom | Usual cause |
+        | --- | --- |
+        | Components render unstyled | Tailwind is not scanning `dist` — the `@source` directive was stripped |
+        | Colours wrong or missing | `theme.css` imported *before* `tailwindcss` |
+        | Dark mode flashes light | `themeScript()` is not in `<head>` |
+
+  - type: input
+    id: version
+    attributes:
+      label: Package version
+      placeholder: '@kubermatic/ui-kit 0.1.0'
+    validations:
+      required: true
+
+  - type: dropdown
+    id: package
+    attributes:
+      label: Which package
+      options:
+        - '@kubermatic/ui-kit'
+        - '@kubermatic/eslint-config'
+        - The Storybook catalogue itself
+    validations:
+      required: true
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happens, and what you expected instead
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: >
+        The smallest component that shows it. If it only reproduces inside an
+        app, say which framework and rendering mode — the failure modes differ
+        sharply between a client-only SPA and a React Server Components tree.
+      render: tsx
+    validations:
+      required: true
+
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      description: React, Tailwind, Node, bundler or framework, and versions.
+      placeholder: React 19.2, Tailwind 4.3, Next.js 15 (app router), Node 24
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: theming
+    attributes:
+      label: Theming
+      options:
+        - label: I pass a custom palette through `tokens` or override tokens in CSS.
+        - label: I have run `auditThemeContrast` against it (if this is a contrast issue).

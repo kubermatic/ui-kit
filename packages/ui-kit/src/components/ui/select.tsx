@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 The Kubermatic ui-kit Authors.
+ * Copyright 2026 The Kubermatic Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,211 +13,273 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 'use client';
 
-import * as React from 'react';
-import { Select as SelectPrimitive } from '@base-ui/react';
-import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from 'lucide-react';
+import { Select as BaseSelect } from '@base-ui/react/select';
+import { Check, ChevronDown, ChevronUp } from 'lucide-react';
+import { useId, type ComponentProps, type ReactNode } from 'react';
 
-import { cn } from '@/lib/utils';
+import { cn } from '../../lib/utils.js';
 
-function Select<Value, Multiple extends boolean | undefined = false>({
-  ...props
-}: SelectPrimitive.Root.Props<Value, Multiple>) {
-  return <SelectPrimitive.Root {...props} />;
-}
+/**
+ * Select — Base UI's select, styled.
+ *
+ * Exposed as parts rather than a single configured component, because the
+ * two products need genuinely different item rendering: one puts a role
+ * description and an icon in each row, the other puts a connection-status
+ * dot after the cluster name. A single `options` prop would have grown a
+ * `renderOption` escape hatch within a week.
+ *
+ * For the common toolbar case — a flat list of strings filtering a table —
+ * use `FilterSelect`, which is that configured component and says so.
+ *
+ * Pass `items` whenever a value and its label differ. It is how Base UI maps
+ * the selected value back to a label for the closed trigger; without it
+ * `SelectValue` renders the raw value, so a `namespaced`/`Namespaced` pair
+ * shows the machine string to the user. `FilterSelect` does this for you —
+ * composing the parts yourself means remembering it.
+ *
+ *   <Select value={ns} onValueChange={setNs} items={options}>
+ *     <SelectTrigger><SelectValue placeholder="Namespace" /></SelectTrigger>
+ *     <SelectContent>
+ *       <SelectItem value="default">default</SelectItem>
+ *     </SelectContent>
+ *   </Select>
+ */
+export const Select = BaseSelect.Root;
+export const SelectGroup = BaseSelect.Group;
+export const SelectValue = BaseSelect.Value;
 
-function SelectGroup({ ...props }: SelectPrimitive.Group.Props) {
-  return <SelectPrimitive.Group data-slot="select-group" {...props} />;
-}
+export type SelectTriggerProps = Omit<ComponentProps<typeof BaseSelect.Trigger>, 'className'> & {
+  className?: string;
+  size?: 'sm' | 'default';
+};
 
-function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
-  return (
-    <SelectPrimitive.Value
-      data-slot="select-value"
-      className={cn('data-placeholder:text-muted-foreground', className)}
-      {...props}
-    />
-  );
-}
-
-function SelectTrigger({
+export function SelectTrigger({
   className,
   size = 'default',
   children,
   ...props
-}: SelectPrimitive.Trigger.Props & {
-  size?: 'sm' | 'default';
-}) {
+}: SelectTriggerProps) {
   return (
-    <SelectPrimitive.Trigger
+    <BaseSelect.Trigger
       data-slot="select-trigger"
       data-size={size}
       className={cn(
-        "border-input focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:bg-input/30 dark:hover:bg-input/50 dark:aria-invalid:ring-destructive/40 [&_svg:not([class*='text-'])]:text-muted-foreground flex w-fit items-center justify-between gap-2 rounded-md border bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-[size=default]:h-9 data-[size=sm]:h-8 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        'flex w-full items-center justify-between gap-2 rounded-md border border-input bg-background px-3',
+        'font-sans text-sm text-foreground shadow-xs transition-[color,box-shadow] outline-none',
+        'data-[size=default]:h-9 data-[size=sm]:h-8',
+        'focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50',
+        'disabled:cursor-not-allowed disabled:opacity-50',
+        'aria-invalid:border-destructive aria-invalid:ring-destructive/30',
+        // The placeholder is rendered by Select.Value, so the muted colour has
+        // to be selected on the trigger's own placeholder state.
+        'data-placeholder:text-muted-foreground',
+        '[&_svg]:pointer-events-none [&_svg]:shrink-0',
         className,
       )}
       {...props}
     >
       {children}
-      <SelectPrimitive.Icon
-        render={<ChevronDownIcon className="size-4 opacity-50" />}
-      />
-    </SelectPrimitive.Trigger>
+      <BaseSelect.Icon className="text-muted-foreground">
+        <ChevronDown className="size-4" />
+      </BaseSelect.Icon>
+    </BaseSelect.Trigger>
   );
 }
 
-function SelectContent({
+export type SelectContentProps = Omit<ComponentProps<typeof BaseSelect.Popup>, 'className'> & {
+  className?: string;
+  /** Distance from the trigger, in pixels. */
+  sideOffset?: number;
+  /** Aligns the popup's width to the trigger's. */
+  matchTriggerWidth?: boolean;
+};
+
+export function SelectContent({
   className,
-  children,
-  side = 'bottom',
   sideOffset = 4,
-  align = 'center',
-  alignOffset = 0,
-  alignItemWithTrigger = true,
-  container,
+  matchTriggerWidth = true,
+  children,
   ...props
-}: SelectPrimitive.Popup.Props &
-  Pick<
-    SelectPrimitive.Positioner.Props,
-    'side' | 'align' | 'sideOffset' | 'alignOffset' | 'alignItemWithTrigger'
-  > & {
-    container?: SelectPrimitive.Portal.Props['container'];
-  }) {
+}: SelectContentProps) {
   return (
-    <SelectPrimitive.Portal container={container}>
-      <SelectPrimitive.Positioner
-        side={side}
+    <BaseSelect.Portal>
+      <BaseSelect.Positioner
         sideOffset={sideOffset}
-        align={align}
-        alignOffset={alignOffset}
-        alignItemWithTrigger={alignItemWithTrigger}
-        className="isolate z-50"
+        alignItemWithTrigger={false}
+        className="z-50 outline-none"
       >
-        <SelectPrimitive.Popup
+        <BaseSelect.ScrollUpArrow className="flex h-6 cursor-default items-center justify-center bg-background text-muted-foreground">
+          <ChevronUp className="size-4" />
+        </BaseSelect.ScrollUpArrow>
+        <BaseSelect.Popup
           data-slot="select-content"
           className={cn(
-            'bg-popover text-popover-foreground data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 relative max-h-(--available-height) min-w-[8rem] origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-md border shadow-md',
+            'max-h-[min(24rem,var(--available-height))] min-w-[8rem] overflow-y-auto',
+            'rounded-md border border-border bg-background p-1 text-foreground shadow-md outline-none',
+            matchTriggerWidth && 'w-[var(--anchor-width)]',
+            'origin-[var(--transform-origin)] transition-[transform,scale,opacity]',
+            'data-starting-style:scale-95 data-starting-style:opacity-0',
+            'data-ending-style:scale-95 data-ending-style:opacity-0',
             className,
           )}
           {...props}
         >
-          <SelectScrollUpButton />
-          <SelectPrimitive.List
-            className={cn(
-              'p-1',
-              !alignItemWithTrigger &&
-                'w-full min-w-[var(--anchor-width)] scroll-my-1',
-            )}
-          >
-            {children}
-          </SelectPrimitive.List>
-          <SelectScrollDownButton />
-        </SelectPrimitive.Popup>
-      </SelectPrimitive.Positioner>
-    </SelectPrimitive.Portal>
+          <BaseSelect.List>{children}</BaseSelect.List>
+        </BaseSelect.Popup>
+        <BaseSelect.ScrollDownArrow className="flex h-6 cursor-default items-center justify-center bg-background text-muted-foreground">
+          <ChevronDown className="size-4" />
+        </BaseSelect.ScrollDownArrow>
+      </BaseSelect.Positioner>
+    </BaseSelect.Portal>
   );
 }
 
-function SelectLabel({
-  className,
-  ...props
-}: SelectPrimitive.GroupLabel.Props) {
-  return (
-    <SelectPrimitive.GroupLabel
-      data-slot="select-label"
-      className={cn('text-muted-foreground px-2 py-1.5 text-xs', className)}
-      {...props}
-    />
-  );
-}
+export type SelectItemProps = Omit<ComponentProps<typeof BaseSelect.Item>, 'className'> & {
+  className?: string;
+};
 
-function SelectItem({
-  className,
-  children,
-  ...props
-}: SelectPrimitive.Item.Props) {
+export function SelectItem({ className, children, ...props }: SelectItemProps) {
   return (
-    <SelectPrimitive.Item
+    <BaseSelect.Item
       data-slot="select-item"
       className={cn(
-        "data-highlighted:bg-accent data-highlighted:text-accent-foreground [&_svg:not([class*='text-'])]:text-muted-foreground relative flex w-full cursor-default items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
+        'relative flex w-full cursor-default items-center gap-2 rounded-sm py-1.5 pr-8 pl-2',
+        'font-sans text-sm outline-none select-none',
+        'data-highlighted:bg-secondary data-highlighted:text-secondary-foreground',
+        'data-disabled:pointer-events-none data-disabled:opacity-50',
+        "[&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4",
         className,
       )}
       {...props}
     >
-      <SelectPrimitive.ItemIndicator
-        data-slot="select-item-indicator"
-        render={
-          <span className="absolute right-2 flex size-3.5 items-center justify-center" />
-        }
-      >
-        <CheckIcon className="size-4" />
-      </SelectPrimitive.ItemIndicator>
-      <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
-    </SelectPrimitive.Item>
+      <BaseSelect.ItemText className="flex flex-1 items-center gap-2">
+        {children}
+      </BaseSelect.ItemText>
+      <BaseSelect.ItemIndicator className="absolute right-2 flex items-center justify-center">
+        <Check className="size-4" />
+      </BaseSelect.ItemIndicator>
+    </BaseSelect.Item>
   );
 }
 
-function SelectSeparator({
+export function SelectGroupLabel({
   className,
   ...props
-}: React.ComponentProps<typeof SelectPrimitive.Separator>) {
+}: Omit<ComponentProps<typeof BaseSelect.GroupLabel>, 'className'> & { className?: string }) {
   return (
-    <SelectPrimitive.Separator
-      data-slot="select-separator"
-      className={cn('bg-border pointer-events-none -mx-1 my-1 h-px', className)}
+    <BaseSelect.GroupLabel
+      data-slot="select-group-label"
+      className={cn('px-2 py-1.5 font-sans text-xs font-medium text-muted-foreground', className)}
       {...props}
     />
   );
 }
 
-function SelectScrollUpButton({
+export function SelectSeparator({
   className,
   ...props
-}: SelectPrimitive.ScrollUpArrow.Props) {
+}: Omit<ComponentProps<typeof BaseSelect.Separator>, 'className'> & { className?: string }) {
   return (
-    <SelectPrimitive.ScrollUpArrow
-      data-slot="select-scroll-up-button"
-      className={cn(
-        'bg-popover z-10 flex cursor-default items-center justify-center py-1',
-        className,
-      )}
+    <BaseSelect.Separator
+      data-slot="select-separator"
+      className={cn('-mx-1 my-1 h-px bg-border', className)}
       {...props}
-    >
-      <ChevronUpIcon className="size-4" />
-    </SelectPrimitive.ScrollUpArrow>
+    />
   );
 }
 
-function SelectScrollDownButton({
-  className,
-  ...props
-}: SelectPrimitive.ScrollDownArrow.Props) {
-  return (
-    <SelectPrimitive.ScrollDownArrow
-      data-slot="select-scroll-down-button"
-      className={cn(
-        'bg-popover z-10 flex cursor-default items-center justify-center py-1',
-        className,
-      )}
-      {...props}
-    >
-      <ChevronDownIcon className="size-4" />
-    </SelectPrimitive.ScrollDownArrow>
-  );
+/** An option as `{ value, label }`, or a bare string when the two are equal. */
+export type SelectOption = string | { value: string; label: ReactNode };
+
+const optionValue = (option: SelectOption) => (typeof option === 'string' ? option : option.value);
+const optionLabel = (option: SelectOption) => (typeof option === 'string' ? option : option.label);
+
+export interface FilterSelectProps {
+  /** Inline label rendered before the control. */
+  label?: ReactNode;
+  value: string;
+  onValueChange: (value: string) => void;
+  options: readonly SelectOption[];
+  placeholder?: string;
+  size?: 'sm' | 'default';
+  className?: string;
+  /** Width of the trigger. Toolbar filters need a fixed width to stop jitter. */
+  triggerClassName?: string;
+  'data-testid'?: string;
 }
 
-export {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectScrollDownButton,
-  SelectScrollUpButton,
-  SelectSeparator,
-  SelectTrigger,
-  SelectValue,
-};
+/**
+ * FilterSelect — the configured single-select both products' table toolbars
+ * want: an inline label, a flat option list, a string value.
+ *
+ * It exists so that the fifty filter dropdowns across the two apps are not
+ * fifty hand-assembled `Select` compositions that drift apart. Anything more
+ * elaborate than a flat list should compose `Select` directly instead of
+ * adding a prop here.
+ */
+export function FilterSelect({
+  label,
+  value,
+  onValueChange,
+  options,
+  placeholder,
+  size = 'sm',
+  className,
+  triggerClassName,
+  'data-testid': testId,
+}: FilterSelectProps) {
+  const labelId = useId();
+
+  return (
+    <div
+      data-slot="filter-select"
+      className={cn('flex items-center gap-2 font-sans text-sm', className)}
+    >
+      {label ? (
+        <span id={labelId} className="whitespace-nowrap text-muted-foreground">
+          {label}
+        </span>
+      ) : null}
+      <Select
+        value={value}
+        onValueChange={(next) => onValueChange(next as string)}
+        /*
+         * `items` is load-bearing, not a convenience: it is how Base UI maps
+         * the selected *value* back to its label for the trigger display.
+         * Without it `SelectValue` renders the raw value, so an option of
+         * `{ value: 'degraded', label: 'Needs attention' }` shows "degraded".
+         */
+        items={options.map((option) => ({
+          value: optionValue(option),
+          label: optionLabel(option),
+        }))}
+      >
+        <SelectTrigger
+          size={size}
+          className={cn('w-40', triggerClassName)}
+          data-testid={testId}
+          /*
+           * The inline label has to be *associated*, not merely adjacent.
+           * Rendering "Status" beside the control and stopping there is what
+           * both products do, and it leaves the trigger with an accessible
+           * name of whatever value happens to be selected — so a row of four
+           * filters announces "All, All, Synced, All" with no way to tell
+           * which is which.
+           */
+          aria-labelledby={label ? labelId : undefined}
+        >
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((option) => (
+            <SelectItem key={optionValue(option)} value={optionValue(option)}>
+              {optionLabel(option)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}

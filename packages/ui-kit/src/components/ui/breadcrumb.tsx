@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 The Kubermatic ui-kit Authors.
+ * Copyright 2026 The Kubermatic Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,25 +13,43 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 'use client';
 
-import * as React from 'react';
-import { useRender } from '@base-ui/react';
 import { ChevronRight, MoreHorizontal } from 'lucide-react';
+import { Fragment, type ComponentProps, type ReactNode } from 'react';
 
-import { cn } from '@/lib/utils';
+import { cn } from '../../lib/utils.js';
 
-function Breadcrumb({ ...props }: React.ComponentProps<'nav'>) {
-  return <nav aria-label="breadcrumb" data-slot="breadcrumb" {...props} />;
+/**
+ * Breadcrumb — where you are in the hierarchy.
+ *
+ * An `<ol>` inside a labelled `<nav>`, because the order is the meaning. The
+ * separators are `aria-hidden`: a screen reader reading "Organizations
+ * slash Acme slash Secrets" is being read punctuation, and the list already
+ * conveys the nesting.
+ *
+ * One product derives its breadcrumb by title-casing URL segments, which
+ * produces "Eso deployments" and "Push secrets". `Breadcrumbs` takes labels
+ * rather than deriving them for that reason — the route knows its own name and
+ * the URL does not.
+ */
+export function Breadcrumb({ className, ...props }: ComponentProps<'nav'>) {
+  return (
+    <nav
+      data-slot="breadcrumb"
+      aria-label="Breadcrumb"
+      className={cn('font-sans text-sm', className)}
+      {...props}
+    />
+  );
 }
 
-function BreadcrumbList({ className, ...props }: React.ComponentProps<'ol'>) {
+export function BreadcrumbList({ className, ...props }: ComponentProps<'ol'>) {
   return (
     <ol
       data-slot="breadcrumb-list"
       className={cn(
-        'text-muted-foreground flex flex-wrap items-center gap-1.5 text-sm break-words sm:gap-2.5',
+        'flex flex-wrap items-center gap-1.5 break-words text-muted-foreground',
         className,
       )}
       {...props}
@@ -39,7 +57,7 @@ function BreadcrumbList({ className, ...props }: React.ComponentProps<'ol'>) {
   );
 }
 
-function BreadcrumbItem({ className, ...props }: React.ComponentProps<'li'>) {
+export function BreadcrumbItem({ className, ...props }: ComponentProps<'li'>) {
   return (
     <li
       data-slot="breadcrumb-item"
@@ -49,40 +67,58 @@ function BreadcrumbItem({ className, ...props }: React.ComponentProps<'li'>) {
   );
 }
 
-function BreadcrumbLink({
-  className,
-  render,
-  ...props
-}: useRender.ComponentProps<'a'>) {
-  return useRender({
-    render,
-    defaultTagName: 'a',
-    props: {
-      'data-slot': 'breadcrumb-link',
-      className: cn('hover:text-foreground transition-colors', className),
-      ...props,
-    },
-  });
+/**
+ * A link in the trail. Pass the router's own link component:
+ *
+ *   <BreadcrumbLink render={<Link to="/clusters" />}>Clusters</BreadcrumbLink>
+ */
+export interface BreadcrumbLinkProps extends ComponentProps<'a'> {
+  /** Replaces the rendered `<a>` — for a framework link component. */
+  render?: ReactNode;
 }
 
-function BreadcrumbPage({ className, ...props }: React.ComponentProps<'span'>) {
+export function BreadcrumbLink({ className, render, ...props }: BreadcrumbLinkProps) {
+  const classes = cn('transition-colors hover:text-foreground', className);
+
+  if (render) {
+    /*
+     * Rendered by cloning rather than through Base UI's `useRender`: a
+     * breadcrumb link has no behaviour to merge, only a class, and pulling in
+     * the render machinery for that would make the simple case require a
+     * Base UI import in the consumer.
+     */
+    return (
+      <span data-slot="breadcrumb-link" className={cn('contents', classes)}>
+        {render}
+      </span>
+    );
+  }
+
+  return <a data-slot="breadcrumb-link" className={classes} {...props} />;
+}
+
+/**
+ * The current page.
+ *
+ * Plain text with `aria-current="page"` — deliberately *not*
+ * `role="link" aria-disabled="true"`, which is the common shadcn markup for
+ * this. That pairing announces "Secrets, link, dimmed", claiming an
+ * interactive element that does not exist and inviting the user to try
+ * activating it. `aria-current` on ordinary text says the one thing that is
+ * true.
+ */
+export function BreadcrumbPage({ className, ...props }: ComponentProps<'span'>) {
   return (
     <span
       data-slot="breadcrumb-page"
-      role="link"
-      aria-disabled="true"
       aria-current="page"
-      className={cn('text-foreground font-normal', className)}
+      className={cn('font-medium text-foreground', className)}
       {...props}
     />
   );
 }
 
-function BreadcrumbSeparator({
-  children,
-  className,
-  ...props
-}: React.ComponentProps<'li'>) {
+export function BreadcrumbSeparator({ children, className, ...props }: ComponentProps<'li'>) {
   return (
     <li
       data-slot="breadcrumb-separator"
@@ -96,30 +132,66 @@ function BreadcrumbSeparator({
   );
 }
 
-function BreadcrumbEllipsis({
-  className,
-  ...props
-}: React.ComponentProps<'span'>) {
+export function BreadcrumbEllipsis({ className, ...props }: ComponentProps<'span'>) {
   return (
     <span
       data-slot="breadcrumb-ellipsis"
       role="presentation"
       aria-hidden="true"
-      className={cn('flex size-9 items-center justify-center', className)}
+      className={cn('flex size-5 items-center justify-center', className)}
       {...props}
     >
-      <MoreHorizontal className="size-4" />
-      <span className="sr-only">More</span>
+      <MoreHorizontal className="size-3.5" />
     </span>
   );
 }
 
-export {
-  Breadcrumb,
-  BreadcrumbList,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-  BreadcrumbEllipsis,
-};
+export interface BreadcrumbEntry {
+  label: ReactNode;
+  /** Omit for the current page, which renders as text. */
+  href?: string;
+  /** A framework link element, used instead of a plain `<a href>`. */
+  render?: ReactNode;
+}
+
+export interface BreadcrumbsProps extends Omit<ComponentProps<'nav'>, 'children'> {
+  items: readonly BreadcrumbEntry[];
+}
+
+/**
+ * Breadcrumbs — the data-driven form, which is what a page template needs.
+ *
+ * The last entry is always the current page regardless of whether it has an
+ * `href`: a trail whose final item links to the page you are already on is a
+ * link that does nothing.
+ */
+export function Breadcrumbs({ items, ...props }: BreadcrumbsProps) {
+  return (
+    <Breadcrumb {...props}>
+      <BreadcrumbList>
+        {items.map((item, index) => {
+          const isLast = index === items.length - 1;
+          /*
+           * The separator is a sibling `<li>`, not nested inside the item: an
+           * `<li>` inside an `<li>` is invalid, and a screen reader announcing
+           * "list of 3 items" would be counting separators as entries.
+           */
+          return (
+            <Fragment key={index}>
+              <BreadcrumbItem>
+                {isLast ? (
+                  <BreadcrumbPage>{item.label}</BreadcrumbPage>
+                ) : (
+                  <BreadcrumbLink href={item.href} render={item.render}>
+                    {item.label}
+                  </BreadcrumbLink>
+                )}
+              </BreadcrumbItem>
+              {isLast ? null : <BreadcrumbSeparator />}
+            </Fragment>
+          );
+        })}
+      </BreadcrumbList>
+    </Breadcrumb>
+  );
+}

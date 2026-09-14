@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 The Kubermatic ui-kit Authors.
+ * Copyright 2026 The Kubermatic Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,32 +13,47 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 'use client';
 
-import { Checkbox as CheckboxPrimitive } from '@base-ui/react';
-import { CheckIcon } from 'lucide-react';
+import { Checkbox as BaseCheckbox } from '@base-ui/react/checkbox';
+import { Check, Minus } from 'lucide-react';
+import type { ComponentProps } from 'react';
 
-import { cn } from '@/lib/utils';
+import { cn } from '../../lib/utils.js';
 
-function Checkbox({ className, ...props }: CheckboxPrimitive.Root.Props) {
+export interface CheckboxProps extends Omit<ComponentProps<typeof BaseCheckbox.Root>, 'className'> {
+  className?: string;
+}
+
+/**
+ * Checkbox — Base UI's checkbox, which handles the indeterminate state that
+ * a table's select-all header needs. `indeterminate` is a real prop there,
+ * not a DOM property you have to set in an effect.
+ */
+export function Checkbox({ className, ...props }: CheckboxProps) {
   return (
-    <CheckboxPrimitive.Root
+    <BaseCheckbox.Root
       data-slot="checkbox"
       className={cn(
-        'peer border-input focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 data-checked:border-primary data-checked:bg-primary data-checked:text-primary-foreground dark:bg-input/30 dark:aria-invalid:ring-destructive/40 dark:data-checked:bg-primary size-4 shrink-0 rounded-[4px] border shadow-xs transition-shadow outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50',
+        'peer flex size-4 shrink-0 items-center justify-center rounded-[4px] border border-input',
+        'shadow-xs transition-shadow outline-none',
+        'focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50',
+        'data-checked:border-primary data-checked:bg-primary data-checked:text-primary-foreground',
+        'data-indeterminate:border-primary data-indeterminate:bg-primary data-indeterminate:text-primary-foreground',
+        'data-disabled:cursor-not-allowed data-disabled:opacity-50',
+        'aria-invalid:border-destructive aria-invalid:ring-destructive/30',
         className,
       )}
       {...props}
     >
-      <CheckboxPrimitive.Indicator
-        data-slot="checkbox-indicator"
-        className="grid place-content-center text-current transition-none"
-      >
-        <CheckIcon className="size-3.5" />
-      </CheckboxPrimitive.Indicator>
-    </CheckboxPrimitive.Root>
+      <BaseCheckbox.Indicator
+        className="flex items-center justify-center text-current data-unchecked:hidden"
+        render={(indicatorProps, state) => (
+          <span {...indicatorProps}>
+            {state.indeterminate ? <Minus className="size-3.5" /> : <Check className="size-3.5" />}
+          </span>
+        )}
+      />
+    </BaseCheckbox.Root>
   );
 }
-
-export { Checkbox };
