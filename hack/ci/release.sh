@@ -83,9 +83,7 @@ npm run check:dist
 echodate "Configuring git…"
 git config user.email "dev@kubermatic.com"
 git config user.name "Kubermatic Bot"
-# Prow clones over SSH with a deploy key that is not allowed to push. The bot
-# token is, and x-access-token is how a token authenticates over HTTPS.
-git remote set-url origin "https://x-access-token:${KUBERMATIC_BOT_GITHUB_TOKEN}@github.com/${REPO}.git"
+set_push_remote "https://x-access-token:${KUBERMATIC_BOT_GITHUB_TOKEN}@github.com/${REPO}.git"
 
 # Prow checks out a detached HEAD at the merged commit; changesets needs to
 # know which branch it is versioning.

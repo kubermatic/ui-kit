@@ -144,3 +144,21 @@ vault_ci_login() {
 
   export VAULT_TOKEN="$token"
 }
+
+# Point `origin` at an HTTPS URL that carries the bot token.
+#
+# Prow clones over SSH with a deploy key that is not allowed to push, and
+# x-access-token is how a token authenticates over HTTPS instead. The awkward
+# part is that there may be no `origin` to rewrite: clonerefs fetches the refs
+# by URL into a `git init`ed directory, and whether it leaves a remote behind
+# depends on the decoration — so `git remote set-url` fails with "No such
+# remote 'origin'" on a tree that is otherwise checked out correctly.
+#
+# Written as remove-then-add rather than a set-url/add branch because the
+# outcome is the same either way and this states it once.
+set_push_remote() {
+  local url="$1"
+
+  git remote remove origin > /dev/null 2>&1 || true
+  git remote add origin "$url"
+}
