@@ -1,0 +1,12 @@
+import{n as e}from"./rolldown-runtime-DkW27tQK.js";import{t}from"./jsx-runtime-DeHZSEgm.js";import{r as n,t as r}from"./button-DkUjhKwZ.js";import{i,n as a,r as o,t as s}from"./toast-DSxCEtvR.js";function c(){let e=i();return(0,l.jsxs)(`div`,{className:`flex flex-wrap gap-2`,children:[(0,l.jsx)(r,{variant:`outline`,onClick:()=>e.info(`Reconciliation paused`),children:`Info`}),(0,l.jsx)(r,{variant:`outline`,onClick:()=>e.success(`Secret created`,{description:`db-credentials in billing.`}),children:`Success`}),(0,l.jsx)(r,{variant:`outline`,onClick:()=>e.warning(`Provider is rate-limiting`),children:`Warning`}),(0,l.jsx)(r,{variant:`outline`,onClick:()=>e.error(`Could not save`,{description:`The API returned 503.`,action:{label:`Retry`,onClick:()=>{}}}),children:`Error`})]})}var l,u,d,f,p;function m(){return(m=e((()=>{n(),o(),l=t(),u={title:`Feedback/Toast`,component:a,parameters:{layout:`centered`,docs:{description:{component:"Mount `ToastProvider` once above anything that toasts, and one `Toaster` inside it — `AppShell` does both. `useToast` gives the calling convention both products already use (`toast.success('Secret created')`), so migrating their ~200 call sites is a change of import.\n\n`error` and `warning` are queued at high priority, which is what makes them assertive live regions: a failure announced only politely can sit unread behind whatever the user was already being told.\n\nThe limit is 3 rather than Base UI's 5 — a dashboard that fails a list call for six namespaces will try to toast six times, and a stack tall enough to cover the button you were aiming at is worse than a truncated one."}}}},d={render:()=>(0,l.jsxs)(s,{children:[(0,l.jsx)(c,{}),(0,l.jsx)(a,{})]})},f={globals:{theme:`dark`},tags:[`!autodocs`],render:d.render},p=[`Playground`,`PlaygroundDark`],d.parameters={...d.parameters,docs:{...d.parameters?.docs,source:{originalSource:`{
+  render: () => <ToastProvider>
+      <Demo />
+      <Toaster />
+    </ToastProvider>
+}`,...d.parameters?.docs?.source}}},f.parameters={...f.parameters,docs:{...f.parameters?.docs,source:{originalSource:`{
+  globals: {
+    theme: 'dark'
+  },
+  tags: ['!autodocs'],
+  render: Playground.render
+}`,...f.parameters?.docs?.source}}}})))()}m();export{d as Playground,f as PlaygroundDark,p as __namedExportsOrder,u as default};

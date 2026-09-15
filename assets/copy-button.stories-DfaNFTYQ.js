@@ -1,0 +1,6 @@
+import{n as e}from"./rolldown-runtime-DkW27tQK.js";import{n as t,t as n}from"./copy-button-u8QXyioe.js";var r,i,a,o;function s(){return(s=e((()=>{t(),r={title:`Primitives/CopyButton`,component:n,parameters:{layout:`centered`,docs:{description:{component:"Copies a value and confirms it — in a live region as well as by swapping the icon, because the icon alone tells a screen-reader user nothing. It stays enabled afterwards, so the same value can be copied twice, and it reports the failure when `navigator.clipboard` is missing (which it is on every insecure origin, i.e. every port-forward)."}}},args:{value:`kubectl get secrets -n billing`,label:`Copy command`}},i={},a={args:{children:`Copy kubeconfig`,variant:`outline`}},o=[`IconOnly`,`WithLabel`],i.parameters={...i.parameters,docs:{...i.parameters?.docs,source:{originalSource:`{}`,...i.parameters?.docs?.source}}},a.parameters={...a.parameters,docs:{...a.parameters?.docs,source:{originalSource:`{
+  args: {
+    children: 'Copy kubeconfig',
+    variant: 'outline'
+  }
+}`,...a.parameters?.docs?.source},description:{story:`With visible text, for a place where an icon alone is too subtle.`,...a.parameters?.docs?.description}}}})))()}s();export{i as IconOnly,a as WithLabel,o as __namedExportsOrder,r as default};
