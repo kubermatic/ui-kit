@@ -1,0 +1,53 @@
+# Copyright 2026 The Kubermatic Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Netlify builds the Storybook catalogue. Same output as
+# hack/ci/publish-catalogue.sh, minus the gh-pages push: Netlify serves the
+# directory itself.
+#
+# STORYBOOK_BASE_PATH is deliberately unset. Netlify serves a site from the
+# origin root (and a deploy preview from the root of its own subdomain), so the
+# default base is correct. Setting it to a subdirectory here, as the Pages job
+# has to, would make every asset URL 404.
+
+[build]
+  command = "npm run build-storybook"
+  publish = "storybook-static"
+
+[build.environment]
+  # Also in .nvmrc, which Netlify reads; repeated here so the build image's
+  # default cannot apply if that file ever moves. packages require >=24.
+  NODE_VERSION = "24"
+  # Workspace root installs need the dev dependencies — Storybook, Vite and
+  # Tailwind all live there. Netlify sets NODE_ENV=production for builds, which
+  # would otherwise make `npm ci` skip them.
+  NPM_FLAGS = "--include=dev"
+
+# Storybook links to stories with a query string (`/?path=/story/…`), so deep
+# links already resolve to the index. Everything else on disk is a real file;
+# no SPA fallback, so a missing asset stays a 404 instead of silently serving
+# HTML in its place.
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Hashed filenames under assets/ are immutable; anything else is revalidated so
+# a redeploy is picked up.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
