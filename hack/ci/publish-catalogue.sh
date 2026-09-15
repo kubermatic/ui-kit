@@ -71,10 +71,7 @@ touch storybook-static/.nojekyll
 echodate "Configuring git…"
 git config user.email "dev@kubermatic.com"
 git config user.name "Kubermatic Bot"
-# Prow clones over SSH with a deploy key that cannot push. Same swap as the
-# release job: the bot token can, and x-access-token is how a token
-# authenticates over HTTPS.
-git remote set-url origin "https://x-access-token:${KUBERMATIC_BOT_GITHUB_TOKEN}@github.com/${REPO}.git"
+set_push_remote "https://x-access-token:${KUBERMATIC_BOT_GITHUB_TOKEN}@github.com/${REPO}.git"
 
 # Committed with plumbing rather than by checking out an orphan branch, because
 # the build output is in .gitignore and sits inside the working tree. A
