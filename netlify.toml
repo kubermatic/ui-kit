@@ -21,8 +21,22 @@
 # subdirectory in.
 
 [build]
+  # The repository root. The npm workspace lives here — package.json,
+  # package-lock.json and .nvmrc are all at the top level — and this is where
+  # dependencies get installed and the build runs. `command` and `publish`
+  # below are resolved relative to it. Unset would default to the same place;
+  # it is spelled out so the UI's Base directory field has something to agree
+  # with rather than a blank that somebody has to interpret.
+  base = "/"
   command = "npm run build-storybook"
   publish = "storybook-static"
+
+  # Netlify's monorepo "package directory" has no netlify.toml key — it is a
+  # site setting, UI or API only. Leave it blank for this site. It is what
+  # tells Netlify where to look for netlify.toml, and this one is at the root;
+  # pointing it at packages/ui-kit would send Netlify looking for a config that
+  # is not there and publishing a directory nothing writes. The catalogue is
+  # built from the workspace root over every package, not from one of them.
 
 [build.environment]
   # Also in .nvmrc, which Netlify reads; repeated here so the build image's
