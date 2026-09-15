@@ -12,14 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Netlify builds the Storybook catalogue. Same output as
-# hack/ci/publish-catalogue.sh, minus the gh-pages push: Netlify serves the
-# directory itself.
+# Netlify builds and serves the Storybook catalogue, at
+# https://ui-kit-kubermatic.netlify.app. This is the only deployment; the build
+# in hack/ci/verify.sh is a presubmit smoke test that publishes nothing.
 #
-# STORYBOOK_BASE_PATH is deliberately unset. Netlify serves a site from the
-# origin root (and a deploy preview from the root of its own subdomain), so the
-# default base is correct. Setting it to a subdirectory here, as the Pages job
-# has to, would make every asset URL 404.
+# The site is served from the origin root, and a deploy preview from the root of
+# its own subdomain, so Vite's default base is correct and nothing has to pass a
+# subdirectory in.
 
 [build]
   command = "npm run build-storybook"
