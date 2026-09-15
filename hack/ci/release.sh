@@ -36,7 +36,8 @@
 ###
 ### Required environment:
 ###   KUBERMATIC_BOT_GITHUB_TOKEN — preset-kubermatic-bot-token. Needs `repo`
-###     to push the branch and open the PR. No package scopes anymore.
+###     to push the branch, open the PR, and let the changelog generator read
+###     the repository's pull requests. No package scopes anymore.
 ###   VAULT_ADDR / VAULT_ROLE_ID / VAULT_SECRET_ID — preset-vault. Reads
 ###     `publish_token` from `dev/npm`.
 
@@ -52,6 +53,19 @@ if [ -z "${KUBERMATIC_BOT_GITHUB_TOKEN:-}" ]; then
   echodate "ERROR: \$KUBERMATIC_BOT_GITHUB_TOKEN is not set. Is the preset attached to this job?"
   exit 1
 fi
+
+# Exported up here, not next to the `gh` calls that also read it, because
+# `changeset version` needs it first: the changelog generator configured in
+# .changeset/config.json is @changesets/changelog-github, which resolves every
+# changeset to its pull request and author over the GraphQL API and aborts the
+# whole run if GITHUB_TOKEN is unset. It reads that name specifically, so the
+# preset's KUBERMATIC_BOT_GITHUB_TOKEN has to be re-exported under it.
+#
+# No extra credential is needed: the API call only reads a public repository,
+# which the `repo` scope already covers. The `read:user` and `repo:status`
+# scopes named in the error message are what changesets suggests minting for a
+# fresh token, not something it verifies.
+export GITHUB_TOKEN="$KUBERMATIC_BOT_GITHUB_TOKEN"
 
 # Checked here rather than at the publish step below, even though only that
 # step needs it. A missing preset-vault label would otherwise stay invisible
@@ -114,7 +128,6 @@ if [ "$pending" -gt 0 ]; then
   retry 3 git push --force origin "$RELEASE_BRANCH"
 
   install_gh
-  export GITHUB_TOKEN="$KUBERMATIC_BOT_GITHUB_TOKEN"
 
   if gh pr view "$RELEASE_BRANCH" --repo "$REPO" > /dev/null 2>&1; then
     echodate "Version PR already open, the force-push refreshed it."
