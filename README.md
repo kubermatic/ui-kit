@@ -7,7 +7,8 @@ rebuild the consuming product dashboards on one library: primitives, forms,
 data display, overlays, an application frame and two page templates.
 
 **The catalogue is the documentation.** This file is only a map of the
-repository — run `npm run storybook` and read the **Guides** section.
+repository — read it at [ui-kit-kubermatic.netlify.app](https://ui-kit-kubermatic.netlify.app/),
+or run `npm run storybook`, and start with the **Guides** section.
 
 ## Quick start
 
@@ -72,7 +73,7 @@ Most of what used to be in this file now lives next to the thing it describes.
 | Adding a component, review process, changesets | [CONTRIBUTING.md](./CONTRIBUTING.md)                                          |
 | What CI runs, and why it is one job            | [`hack/ci/verify.sh`](./hack/ci/verify.sh)                                    |
 | How releases and versioning work               | [`hack/ci/release.sh`](./hack/ci/release.sh)                                  |
-| How the catalogue is published                 | [`hack/ci/publish-catalogue.sh`](./hack/ci/publish-catalogue.sh)              |
+| How the catalogue is published                 | [`netlify.toml`](./netlify.toml)                                              |
 | Weekly dependency audit                        | [`hack/ci/audit.sh`](./hack/ci/audit.sh)                                      |
 | Job definitions                                | [`.prow/`](./.prow), and `kubermatic/infra` for anything holding a credential |
 | Reporting a vulnerability                      | [SECURITY.md](./SECURITY.md)                                                  |

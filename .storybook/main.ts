@@ -63,16 +63,6 @@ const config: StorybookConfig = {
     // Generate prop tables from the TS types rather than PropTypes.
     reactDocgen: 'react-docgen-typescript',
   },
-  /*
-   * A deployed catalogue is not always at the root of its origin — a static
-   * host may serve it from `/<something>/`. Storybook reads this at build time
-   * to write correct asset URLs; without a matching base every asset URL is
-   * absolute-from-root and the page loads blank.
-   *
-   * hack/ci/publish-catalogue.sh sets it to `/ui-kit/`, which is where Pages
-   * serves a project site from. Local and CI builds leave it unset and are
-   * served from an origin root.
-   */
   viteFinal: async (viteConfig) => {
     const { default: tailwindcss } = await import('@tailwindcss/vite');
     viteConfig.plugins ??= [];
@@ -82,9 +72,6 @@ const config: StorybookConfig = {
       ...viteConfig.resolve.alias,
       '@': resolve(import.meta.dirname, '../packages/ui-kit/src'),
     };
-    if (process.env.STORYBOOK_BASE_PATH) {
-      viteConfig.base = process.env.STORYBOOK_BASE_PATH;
-    }
     return viteConfig;
   },
 };

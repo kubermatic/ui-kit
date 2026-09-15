@@ -7,7 +7,7 @@ body:
       value: |
         Before filing: three problems account for most reports, and all three
         are install-side. Check them first — the
-        [Installation guide](https://kubermatic.github.io/ui-kit/?path=/docs/guides-installation--docs)
+        [Installation guide](https://ui-kit-kubermatic.netlify.app/?path=/docs/guides-installation--docs)
         has the detail.
 
         | Symptom | Usual cause |
