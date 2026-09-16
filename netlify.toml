@@ -1,0 +1,66 @@
+# Copyright 2026 The Kubermatic Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Netlify builds and serves the Storybook catalogue, at
+# https://ui-kit-kubermatic.netlify.app. This is the only deployment; the build
+# in hack/ci/verify.sh is a presubmit smoke test that publishes nothing.
+#
+# The site is served from the origin root, and a deploy preview from the root of
+# its own subdomain, so Vite's default base is correct and nothing has to pass a
+# subdirectory in.
+
+[build]
+  # The repository root. The npm workspace lives here — package.json,
+  # package-lock.json and .nvmrc are all at the top level — and this is where
+  # dependencies get installed and the build runs. `command` and `publish`
+  # below are resolved relative to it. Unset would default to the same place;
+  # it is spelled out so the UI's Base directory field has something to agree
+  # with rather than a blank that somebody has to interpret.
+  base = "/"
+  command = "npm run build-storybook"
+  publish = "storybook-static"
+
+  # Netlify's monorepo "package directory" has no netlify.toml key — it is a
+  # site setting, UI or API only. Leave it blank for this site. It is what
+  # tells Netlify where to look for netlify.toml, and this one is at the root;
+  # pointing it at packages/ui-kit would send Netlify looking for a config that
+  # is not there and publishing a directory nothing writes. The catalogue is
+  # built from the workspace root over every package, not from one of them.
+
+[build.environment]
+  # Also in .nvmrc, which Netlify reads; repeated here so the build image's
+  # default cannot apply if that file ever moves. packages require >=24.
+  NODE_VERSION = "24"
+  # Workspace root installs need the dev dependencies — Storybook, Vite and
+  # Tailwind all live there. Netlify sets NODE_ENV=production for builds, which
+  # would otherwise make `npm ci` skip them.
+  NPM_FLAGS = "--include=dev"
+
+# Storybook links to stories with a query string (`/?path=/story/…`), so deep
+# links already resolve to the index. Everything else on disk is a real file;
+# no SPA fallback, so a missing asset stays a 404 instead of silently serving
+# HTML in its place.
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Hashed filenames under assets/ are immutable; anything else is revalidated so
+# a redeploy is picked up.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

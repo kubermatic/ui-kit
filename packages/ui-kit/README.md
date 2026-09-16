@@ -4,8 +4,9 @@ React primitives, design tokens and theming for Kubermatic products. Built on
 [Base UI](https://base-ui.com) with shadcn-style styling, and shipped with a
 brand palette measured against WCAG 2.2 AA.
 
-**📖 The catalogue** — every component and token, with live examples — is not
-hosted yet. Clone [kubermatic/ui-kit](https://github.com/kubermatic/ui-kit) and
+**📖 The catalogue** — every component and token, with live examples — is at
+[ui-kit-kubermatic.netlify.app](https://ui-kit-kubermatic.netlify.app/). It also
+runs locally: clone [kubermatic/ui-kit](https://github.com/kubermatic/ui-kit) and
 run `npm run storybook`.
 
 ## Install
