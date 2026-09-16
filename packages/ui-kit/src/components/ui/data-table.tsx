@@ -135,6 +135,13 @@ const ESTIMATED_ROW_HEIGHT = 41;
  *   should contain a real link, and `onRowClick` is the convenience on top of
  *   it. That is why this prop does not add `tabIndex` — if it is your only way
  *   into the detail page, put a link in the row.
+ * - **Only clickable rows look clickable.** `onRowClick` is what makes a row
+ *   `interactive`: the hover highlight and the pointer appear together, and a
+ *   table without it stays visually inert. Both apps highlight every row on
+ *   hover regardless, which tells the user nothing — a read-only table and a
+ *   navigable one are indistinguishable until you click one and find out.
+ *   Interactive rows are `group/row`, so the link in the first cell can
+ *   `group-hover/row:underline` and the row reads as a single target.
  * - **Selection survives a refetch,** given `getRowId`.
  *
  * Deliberately client-side. Server-side paging and filtering need the table
@@ -290,7 +297,7 @@ export function DataTable<TData>({
             </TableRow>
           ))
         ) : visibleRows.length === 0 ? (
-          <TableRow className="hover:bg-transparent">
+          <TableRow>
             <TableCell colSpan={columnCount} className="p-0">
               {empty ?? <EmptyState title={emptyMessage} icon={<Search />} />}
             </TableCell>
@@ -319,7 +326,7 @@ export function DataTable<TData>({
                 data-row-id={row.id}
                 data-state={row.getIsSelected() ? 'selected' : undefined}
                 onClick={onRowClick ? () => onRowClick(row.original) : undefined}
-                className={onRowClick ? 'cursor-pointer' : undefined}
+                interactive={!!onRowClick}
               >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell key={cell.id}>

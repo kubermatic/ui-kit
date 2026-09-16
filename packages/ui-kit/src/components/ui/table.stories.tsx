@@ -39,7 +39,10 @@ const meta = {
           'element does.\n\n' +
           'For a resource list, reach for `DataTable` instead — it adds search, sorting, ' +
           'column visibility, selection and the loading/empty/error states. These parts are ' +
-          'for a table you are laying out by hand.',
+          'for a table you are laying out by hand.\n\n' +
+          '`TableRow` is inert by default. A hover highlight reads as "this does ' +
+          'something", so a row that does nothing must not have one — pass `interactive` ' +
+          'on the rows that are actually targets, and only those.',
       },
     },
   },

@@ -65,6 +65,45 @@ describe('Table', () => {
     expect(screen.getByRole('cell', { name: 'db' })).toBeInTheDocument();
   });
 
+  /*
+   * The hover highlight is the only thing telling a user a row does something,
+   * so a row that does nothing must not have one. Both consuming apps shipped
+   * tables where every row lit up — including read-only ones — which makes the
+   * cue worthless.
+   */
+  it('gives a plain row no hover affordance', () => {
+    render(
+      <Table>
+        <TableBody>
+          <TableRow>
+            <TableCell>db</TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>,
+    );
+
+    const row = screen.getByRole('row');
+    expect(row).not.toHaveClass('hover:bg-muted');
+    expect(row).not.toHaveClass('cursor-pointer');
+    expect(row).not.toHaveAttribute('data-interactive');
+  });
+
+  it('gives an interactive row the highlight, the pointer and a hover group', () => {
+    render(
+      <Table>
+        <TableBody>
+          <TableRow interactive>
+            <TableCell>db</TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>,
+    );
+
+    const row = screen.getByRole('row');
+    expect(row).toHaveClass('hover:bg-muted', 'cursor-pointer', 'group/row');
+    expect(row).toHaveAttribute('data-interactive', 'true');
+  });
+
   /* Eight columns of Kubernetes metadata fit no phone; the wrapper scrolls. */
   it('wraps the table in a horizontal scroll container', () => {
     const { container } = render(

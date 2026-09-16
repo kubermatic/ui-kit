@@ -68,13 +68,33 @@ export function TableFooter({ className, ...props }: ComponentProps<'tfoot'>) {
   );
 }
 
-export function TableRow({ className, ...props }: ComponentProps<'tr'>) {
+export interface TableRowProps extends ComponentProps<'tr'> {
+  /**
+   * The row is a target — it highlights on hover and shows a pointer.
+   *
+   * Off by default, and that default is the point: a highlight that follows
+   * the cursor reads as "this does something", so a row that does nothing
+   * must not have one. A table where every row lights up is a table where the
+   * highlight tells you nothing about which rows you can act on.
+   *
+   * An interactive row is also `group/row`, so the cell carrying the link can
+   * react to hover anywhere on the row — `group-hover/row:underline` on the
+   * name is what makes the row read as one target rather than a strip of text
+   * with a link somewhere in it.
+   */
+  interactive?: boolean;
+}
+
+export function TableRow({ className, interactive, ...props }: TableRowProps) {
   return (
     <tr
       data-slot="table-row"
+      /* A handle for tests and for consumers styling rows by state. */
+      data-interactive={interactive || undefined}
       className={cn(
         'border-b border-border transition-colors',
-        'hover:bg-muted data-[state=selected]:bg-muted',
+        'data-[state=selected]:bg-muted',
+        interactive && 'group/row cursor-pointer hover:bg-muted',
         className,
       )}
       {...props}
