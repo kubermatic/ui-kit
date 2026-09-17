@@ -74,6 +74,25 @@ describe('Tabs', () => {
     expect(screen.getByRole('tabpanel')).toHaveTextContent('yaml body');
   });
 
+  describe.each([
+    ['underline', 'data-active:text-primary'],
+    ['pill', 'data-active:text-foreground'],
+  ] as const)('%s variant', (variant, selectedStyling) => {
+    it('keys its selected styling off the attribute Base UI sets', async () => {
+      setup(variant);
+      const overview = screen.getByRole('tab', { name: 'Overview' });
+      const yaml = screen.getByRole('tab', { name: 'YAML' });
+
+      expect(overview).toHaveClass(selectedStyling);
+      expect(overview).toHaveAttribute('data-active');
+      expect(yaml).not.toHaveAttribute('data-active');
+
+      await userEvent.click(yaml);
+      expect(yaml).toHaveAttribute('data-active');
+      expect(overview).not.toHaveAttribute('data-active');
+    });
+  });
+
   it('styles the pill variant differently from the underline one', () => {
     const { unmount } = setup('underline');
     expect(screen.getByRole('tablist')).toHaveClass('border-b');
