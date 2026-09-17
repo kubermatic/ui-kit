@@ -129,8 +129,25 @@ if [ "$pending" -gt 0 ]; then
 
   install_gh
 
-  if gh pr view "$RELEASE_BRANCH" --repo "$REPO" > /dev/null 2>&1; then
-    echodate "Version PR already open, the force-push refreshed it."
+  # Scoped to open pull requests on purpose. `gh pr view "$RELEASE_BRANCH"`
+  # resolves a branch to a pull request in any state, so from the moment the
+  # first version PR was merged it kept answering with that one and this job,
+  # seeing a PR, never opened the next one. Nothing looked wrong in the log:
+  # the branch is not deleted on merge, so the force-push above went on landing
+  # versioning commits on a branch that no longer had a PR to review them.
+  #
+  # `// empty` because a bare `.[0].url` prints the string "null" for an empty
+  # list, which would read here as "a PR is open" and reinstate the same bug.
+  open_pr="$(gh pr list \
+    --repo "$REPO" \
+    --head "$RELEASE_BRANCH" \
+    --base main \
+    --state open \
+    --json url \
+    --jq '.[0].url // empty')"
+
+  if [ -n "$open_pr" ]; then
+    echodate "Version PR already open ($open_pr), the force-push refreshed it."
   else
     gh pr create \
       --repo "$REPO" \
