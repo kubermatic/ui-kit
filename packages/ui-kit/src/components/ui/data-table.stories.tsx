@@ -134,11 +134,14 @@ const meta = {
           'and no click-outside.\n' +
           '- **`aria-rowcount` is the total**, with an absolute `aria-rowindex` per row, so ' +
           '"row 340 of 4000" is announced correctly even when only fifteen `<tr>`s exist.\n' +
-          '- **Selection survives a refetch**, given `getRowId`.\n\n' +
+          '- **Selection survives a refetch**, given `getRowId`.\n' +
+          '- **Only clickable rows look clickable** — `onRowClick` is what brings the hover ' +
+          'highlight and the pointer. Both apps highlight every row regardless, so a ' +
+          'read-only table and a navigable one look identical until you click one.\n\n' +
           '`onRowClick` deliberately does *not* make the row focusable: a clickable `<tr>` ' +
           'is unreachable by keyboard, and making the row itself a tab stop breaks the grid ' +
           'semantics. Put a real link in the first cell and treat the row click as the ' +
-          'shortcut it is.',
+          'shortcut it is — see **Navigable**.',
       },
     },
   },
@@ -192,6 +195,49 @@ export const FullyLoaded: Story = {
   },
 };
 
+/**
+ * A navigable list, done properly: a real link in the first cell, `onRowClick`
+ * as the shortcut on top of it.
+ *
+ * The link is what makes the row reachable by keyboard — the row itself is not
+ * a tab stop and must not become one. `group-hover/row:underline` is what ties
+ * the two together: hovering anywhere on the row underlines the name, so the
+ * row reads as a single target rather than a strip of text with a link in it.
+ *
+ * Compare with **Playground**, which has no `onRowClick` — those rows stay
+ * inert, and that difference is the whole point.
+ */
+export const Navigable: Story = {
+  render: () => (
+    <div className="p-6">
+      <DataTable
+        data={DATA}
+        caption="External secrets"
+        columns={
+          [
+            {
+              accessorKey: 'name',
+              header: 'Name',
+              cell: ({ row }) => (
+                <a
+                  href={`#/external-secrets/${row.original.name}`}
+                  /* The row navigates to the same place; without this, both fire. */
+                  onClick={(event) => event.stopPropagation()}
+                  className="rounded-sm font-medium underline-offset-2 group-hover/row:underline hover:underline"
+                >
+                  {row.original.name}
+                </a>
+              ),
+            },
+            ...COLUMNS.slice(1),
+          ] as ColumnDef<ExternalSecret, never>[]
+        }
+        onRowClick={() => {}}
+      />
+    </div>
+  ),
+};
+
 export const Loading: Story = {
   args: { loading: true },
   render: (args) => (
@@ -232,6 +278,12 @@ export const Failed: Story = {
       <DataTable {...args} onRetry={() => {}} />
     </div>
   ),
+};
+
+export const NavigableDark: Story = {
+  globals: { theme: 'dark' },
+  tags: ['!autodocs'],
+  render: Navigable.render,
 };
 
 export const FullyLoadedDark: Story = {

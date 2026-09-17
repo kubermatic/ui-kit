@@ -119,6 +119,7 @@ export {
   TableHead,
   TableHeader,
   TableRow,
+  type TableRowProps,
 } from './components/ui/table.js';
 export {
   DescriptionItem,

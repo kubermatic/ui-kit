@@ -135,6 +135,31 @@ describe('DataTable', () => {
     expect(onRowClick).toHaveBeenCalledWith({ name: 'tls-cert', namespace: 'ingress' });
   });
 
+  /*
+   * `onRowClick` is the whole signal. Without it the table is read-only and
+   * must not borrow the affordance — otherwise the hover highlight says
+   * "clickable" on a row that will never do anything.
+   */
+  it('marks body rows interactive only when onRowClick is given', () => {
+    const { container: readOnly } = setup();
+    expect(readOnly.querySelectorAll('tbody tr[data-interactive]')).toHaveLength(0);
+
+    const { container: navigable } = setup({ onRowClick: vi.fn() });
+    expect(navigable.querySelectorAll('tbody tr[data-interactive]')).toHaveLength(DATA.length);
+  });
+
+  /* The header is never a target, even when the body rows are. */
+  it('leaves the header row inert on a clickable table', () => {
+    const { container } = setup({ onRowClick: vi.fn() });
+    expect(container.querySelector('thead tr')).not.toHaveAttribute('data-interactive');
+  });
+
+  /* Nor is the "nothing here" row, which has no record behind it. */
+  it('leaves the empty row inert', () => {
+    const { container } = setup({ data: [], onRowClick: vi.fn() });
+    expect(container.querySelector('tbody tr')).not.toHaveAttribute('data-interactive');
+  });
+
   describe('pagination', () => {
     it('pages, and says which page you are on', async () => {
       setup({ pageSize: 2 });
