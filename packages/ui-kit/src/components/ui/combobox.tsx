@@ -160,7 +160,7 @@ export function Combobox({
           'shadow-xs transition-[color,box-shadow]',
           'focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50',
           'has-disabled:cursor-not-allowed has-disabled:opacity-50',
-          'has-aria-invalid:border-destructive has-aria-invalid:ring-destructive/30',
+          'has-aria-invalid:border-destructive-tone has-aria-invalid:ring-destructive-tone/30',
           className,
         )}
       >
@@ -336,7 +336,7 @@ export function MultiCombobox({
           'shadow-xs transition-[color,box-shadow]',
           'focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50',
           'has-disabled:cursor-not-allowed has-disabled:opacity-50',
-          'has-aria-invalid:border-destructive has-aria-invalid:ring-destructive/30',
+          'has-aria-invalid:border-destructive-tone has-aria-invalid:ring-destructive-tone/30',
           className,
         )}
       >

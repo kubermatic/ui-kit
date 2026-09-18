@@ -70,7 +70,7 @@ export function AppFooter({
             href={brand.docsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="rounded-sm font-medium text-primary underline-offset-4 outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            className="rounded-sm font-medium text-primary-tone underline-offset-4 outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50"
           >
             {/* "Documentation", not "Docs": the accessible name of a link
                 should make sense read out of context, which is how a screen

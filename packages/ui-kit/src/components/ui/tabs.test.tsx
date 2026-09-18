@@ -75,7 +75,7 @@ describe('Tabs', () => {
   });
 
   describe.each([
-    ['underline', 'data-active:text-primary'],
+    ['underline', 'data-active:text-primary-tone'],
     ['pill', 'data-active:text-foreground'],
   ] as const)('%s variant', (variant, selectedStyling) => {
     it('keys its selected styling off the attribute Base UI sets', async () => {

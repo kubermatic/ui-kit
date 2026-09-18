@@ -38,7 +38,7 @@ export const buttonVariants = cva(
         outline:
           'border bg-background shadow-xs hover:bg-secondary hover:text-secondary-foreground',
         ghost: 'hover:bg-secondary hover:text-secondary-foreground',
-        link: 'text-primary underline-offset-4 hover:underline',
+        link: 'text-primary-tone underline-offset-4 hover:underline',
       },
       size: {
         sm: 'h-8 gap-1.5 rounded-md px-3',

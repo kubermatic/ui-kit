@@ -30,7 +30,7 @@ export const inputVariants = cva(
     'disabled:cursor-not-allowed disabled:opacity-50',
     // Base UI sets `aria-invalid` from the Field's validity, so an invalid
     // control is styled without the consumer wiring anything up.
-    'aria-invalid:border-destructive aria-invalid:ring-destructive/30',
+    'aria-invalid:border-destructive-tone aria-invalid:ring-destructive-tone/30',
   ],
   {
     variants: {

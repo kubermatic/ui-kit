@@ -53,13 +53,18 @@ export const textVariants = cva('', {
      * Teal, Rosé and Honey are absent on purpose — they measure 1.77:1, 2.57:1
      * and 1.87:1 on white, so as text they would be illegal on a light
      * background. Use them as surfaces via `Badge` instead.
+     *
+     * `primary` and `destructive` resolve to the `-tone` roles, not to the
+     * surfaces of the same name. A surface is tuned to carry its own label,
+     * which on a dark page makes it too dark to read against `background`;
+     * the tone is the same hue tuned for exactly that job.
      */
     tone: {
       default: 'text-foreground',
       muted: 'text-muted-foreground',
       heading: 'text-heading',
-      primary: 'text-primary',
-      destructive: 'text-destructive',
+      primary: 'text-primary-tone',
+      destructive: 'text-destructive-tone',
     },
     weight: {
       normal: 'font-normal',

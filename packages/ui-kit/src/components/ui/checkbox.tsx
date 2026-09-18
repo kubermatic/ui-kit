@@ -41,7 +41,7 @@ export function Checkbox({ className, ...props }: CheckboxProps) {
         'data-checked:border-primary data-checked:bg-primary data-checked:text-primary-foreground',
         'data-indeterminate:border-primary data-indeterminate:bg-primary data-indeterminate:text-primary-foreground',
         'data-disabled:cursor-not-allowed data-disabled:opacity-50',
-        'aria-invalid:border-destructive aria-invalid:ring-destructive/30',
+        'aria-invalid:border-destructive-tone aria-invalid:ring-destructive-tone/30',
         className,
       )}
       {...props}

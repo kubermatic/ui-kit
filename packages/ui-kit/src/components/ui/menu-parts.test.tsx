@@ -123,6 +123,6 @@ describe('MenuLinkItem tone', () => {
     );
 
     await openMenu();
-    expect(screen.getByRole('menuitem', { name: 'Delete' })).toHaveClass('text-destructive');
+    expect(screen.getByRole('menuitem', { name: 'Delete' })).toHaveClass('text-destructive-tone');
   });
 });

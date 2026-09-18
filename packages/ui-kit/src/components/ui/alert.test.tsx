@@ -94,6 +94,6 @@ describe('Alert slots', () => {
 describe('Alert default tone', () => {
   it('defaults to info', () => {
     const { container } = render(<Alert>body</Alert>);
-    expect(container.querySelector('[data-slot="alert"]')).toHaveClass('border-primary');
+    expect(container.querySelector('[data-slot="alert"]')).toHaveClass('border-primary-tone');
   });
 });

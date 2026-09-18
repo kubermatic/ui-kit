@@ -46,7 +46,7 @@ export function Textarea({ className, ...props }: TextareaProps) {
         'placeholder:text-muted-foreground',
         'outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50',
         'disabled:cursor-not-allowed disabled:opacity-50',
-        'aria-invalid:border-destructive aria-invalid:ring-destructive/30',
+        'aria-invalid:border-destructive-tone aria-invalid:ring-destructive-tone/30',
         className,
       )}
       render={<textarea {...props} />}

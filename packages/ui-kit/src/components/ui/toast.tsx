@@ -36,10 +36,10 @@ const TONE_ICON = {
  * opacity composite, and a composite is a colour outside the token set.
  */
 const TONE_CLASSES = {
-  info: 'border-primary [&_[data-slot=toast-icon]]:text-primary',
+  info: 'border-primary-tone [&_[data-slot=toast-icon]]:text-primary-tone',
   success: 'border-success [&_[data-slot=toast-icon]]:text-success',
   warning: 'border-warning [&_[data-slot=toast-icon]]:text-warning',
-  error: 'border-destructive [&_[data-slot=toast-icon]]:text-destructive',
+  error: 'border-destructive-tone [&_[data-slot=toast-icon]]:text-destructive-tone',
 } as const satisfies Record<ToastTone, string>;
 
 const isTone = (value: string | undefined): value is ToastTone =>
@@ -140,7 +140,7 @@ function ToastList() {
           {toast.actionProps ? (
             <BaseToast.Action
               className={cn(
-                'mt-1 w-fit rounded-sm font-sans text-sm font-medium text-primary underline-offset-4',
+                'mt-1 w-fit rounded-sm font-sans text-sm font-medium text-primary-tone underline-offset-4',
                 'outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50',
               )}
             />

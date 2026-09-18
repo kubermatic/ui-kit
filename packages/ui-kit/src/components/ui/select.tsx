@@ -71,7 +71,7 @@ export function SelectTrigger({
         'data-[size=default]:h-9 data-[size=sm]:h-8',
         'focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50',
         'disabled:cursor-not-allowed disabled:opacity-50',
-        'aria-invalid:border-destructive aria-invalid:ring-destructive/30',
+        'aria-invalid:border-destructive-tone aria-invalid:ring-destructive-tone/30',
         // The placeholder is rendered by Select.Value, so the muted colour has
         // to be selected on the trigger's own placeholder state.
         'data-placeholder:text-muted-foreground',

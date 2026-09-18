@@ -87,8 +87,12 @@ export const statusBadgeVariants = cva(
 
       { variant: 'outline', tone: 'success', className: 'border-success text-success' },
       { variant: 'outline', tone: 'warning', className: 'border-warning text-warning' },
-      { variant: 'outline', tone: 'error', className: 'border-destructive text-destructive' },
-      { variant: 'outline', tone: 'info', className: 'border-primary text-primary' },
+      {
+        variant: 'outline',
+        tone: 'error',
+        className: 'border-destructive-tone text-destructive-tone',
+      },
+      { variant: 'outline', tone: 'info', className: 'border-primary-tone text-primary-tone' },
       /*
        * `pending` and `neutral` both fall back to the muted role here.
        * `--secondary` is a pale surface: as *text* on `--background` it is
