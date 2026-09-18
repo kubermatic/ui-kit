@@ -42,10 +42,10 @@ export const alertVariants = cva(
   {
     variants: {
       tone: {
-        info: 'border-primary [&_[data-slot=alert-icon]]:text-primary',
+        info: 'border-primary-tone [&_[data-slot=alert-icon]]:text-primary-tone',
         success: 'border-success [&_[data-slot=alert-icon]]:text-success',
         warning: 'border-warning [&_[data-slot=alert-icon]]:text-warning',
-        error: 'border-destructive [&_[data-slot=alert-icon]]:text-destructive',
+        error: 'border-destructive-tone [&_[data-slot=alert-icon]]:text-destructive-tone',
       },
     },
     defaultVariants: { tone: 'info' },

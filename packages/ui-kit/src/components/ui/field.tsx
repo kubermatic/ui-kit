@@ -99,7 +99,7 @@ export function Field({
             /* Decorative: the control carries the real `required`, and a
              * screen reader announces that. Reading "asterisk" after every
              * label is noise. */
-            <span aria-hidden="true" className="ml-0.5 text-destructive">
+            <span aria-hidden="true" className="ml-0.5 text-destructive-tone">
               *
             </span>
           ) : null}
@@ -121,7 +121,7 @@ export function Field({
         <BaseField.Error
           match
           data-slot="field-error"
-          className="font-sans text-xs font-medium text-destructive"
+          className="font-sans text-xs font-medium text-destructive-tone"
         >
           {error}
         </BaseField.Error>

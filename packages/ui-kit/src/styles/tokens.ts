@@ -41,8 +41,12 @@ export const COLOR_ROLES = {
   border: 'Hairlines and dividers. Non-text, so the threshold is 3:1.',
   input: 'Form control borders. Non-text.',
   ring: 'Focus ring. Non-text.',
-  primary: 'The call-to-action surface, and the `primary` text tone.',
+  primary: 'The call-to-action surface. Dark enough to carry `primary-foreground`.',
   'primary-foreground': 'Text on `primary`.',
+  'primary-tone':
+    'The primary hue as text or a hairline *on* `background` — `Text tone="primary"`, ' +
+    '`Button variant="link"`, the active tab, the `info` alert. Separate from `primary` ' +
+    'because a surface and a text colour want opposite lightness on a dark page.',
   secondary: 'The quieter action surface.',
   'secondary-foreground': 'Text on `secondary`.',
   accent: 'Brand Teal as a surface.',
@@ -51,8 +55,11 @@ export const COLOR_ROLES = {
   'highlight-rose-foreground': 'Text on `highlight-rose`.',
   'highlight-honey': 'Brand Honey as a surface.',
   'highlight-honey-foreground': 'Text on `highlight-honey`.',
-  destructive: 'Negatives and warnings, as a surface and as a text tone.',
+  destructive: 'Negatives, as a surface. Dark enough to carry `destructive-foreground`.',
   'destructive-foreground': 'Text on `destructive`.',
+  'destructive-tone':
+    'The destructive hue as text or a hairline *on* `background` — `Text tone="destructive"`, ' +
+    'validation messages, the required-field asterisk, destructive menu items.',
   success: 'Reconciled / healthy, as a surface and as a text tone. Teal-family, darkened on light.',
   'success-foreground': 'Text on `success`.',
   warning: 'Degraded / needs attention. Honey, darkened on light so it can carry text.',
@@ -146,15 +153,34 @@ export const CONTRAST_PAIRS: readonly ContrastPair[] = [
   },
   {
     surface: 'background',
-    foreground: 'primary',
+    foreground: 'primary-tone',
     minimumRatio: AA_TEXT,
     because: '`Text tone="primary"` and `Button variant="link"`.',
   },
   {
     surface: 'background',
-    foreground: 'destructive',
+    foreground: 'destructive-tone',
     minimumRatio: AA_TEXT,
-    because: '`Text tone="destructive"`.',
+    because: '`Text tone="destructive"`, field errors.',
+  },
+  /*
+   * The surfaces themselves, held to the graphic threshold rather than the
+   * text one. They carry their own `-foreground` and are never read against
+   * the page — but a filled button still has to be *findable* on it, which is
+   * SC 1.4.11. This is the constraint that stops `primary` being darkened
+   * indefinitely to buy its label more contrast.
+   */
+  {
+    surface: 'background',
+    foreground: 'primary',
+    minimumRatio: AA_NON_TEXT,
+    because: 'SC 1.4.11 — a filled `Button` must be distinguishable from the page.',
+  },
+  {
+    surface: 'background',
+    foreground: 'destructive',
+    minimumRatio: AA_NON_TEXT,
+    because: 'SC 1.4.11 — `Button variant="destructive"` against the page.',
   },
   {
     surface: 'primary',

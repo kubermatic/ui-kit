@@ -84,7 +84,7 @@ export const ClusterCard: Story = {
         roles only: the border carries the semantics, the text keeps a verified
         pair.
       */}
-      <div className="border-destructive space-y-1 rounded-lg border p-4">
+      <div className="border-destructive-tone space-y-1 rounded-lg border p-4">
         <Text variant="subline" tone="destructive" className="text-base">
           Quota Exceeded
         </Text>

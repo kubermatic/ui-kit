@@ -75,12 +75,12 @@ export function ErrorState({
       data-slot="error-state"
       role="alert"
       className={cn(
-        'flex min-h-60 flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-destructive px-6 py-12 text-center',
+        'flex min-h-60 flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-destructive-tone px-6 py-12 text-center',
         className,
       )}
       {...props}
     >
-      <AlertCircle aria-hidden="true" className="size-8 text-destructive" />
+      <AlertCircle aria-hidden="true" className="size-8 text-destructive-tone" />
 
       <Text variant="subline" className="text-balance">
         {title}

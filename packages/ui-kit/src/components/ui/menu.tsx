@@ -62,7 +62,7 @@ const itemClasses = [
  * inverting to a filled red row — an accidental hover should not look like the
  * action already happened.
  */
-const destructiveClasses = 'text-destructive data-highlighted:text-destructive';
+const destructiveClasses = 'text-destructive-tone data-highlighted:text-destructive-tone';
 
 export interface MenuContentProps extends Omit<ComponentProps<typeof BaseMenu.Popup>, 'className'> {
   className?: string;

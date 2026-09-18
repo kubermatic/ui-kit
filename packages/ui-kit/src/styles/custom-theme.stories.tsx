@@ -26,6 +26,13 @@ import { ThemeProvider, useTheme, type ThemeOverrides } from '@/hooks/use-theme'
  * A tenant palette supplied from outside the library. Every pair was measured
  * against WCAG AA before being written down — the axe run scans this story
  * like any other, so an inaccessible example would fail the build.
+ *
+ * This tenant keeps a light surface under a dark label on dark, so each
+ * `-tone` happens to equal its surface. That is a property of these colours,
+ * not a rule: the brand palette darkens its surfaces to carry white text, and
+ * there the two roles diverge. A palette that omits the tones does not fall
+ * back to its own surface — it falls back to the *brand* tone, which is tuned
+ * for the brand background and not for this one.
  */
 const VIOLET_TENANT: ThemeOverrides = {
   light: {
@@ -34,6 +41,7 @@ const VIOLET_TENANT: ThemeOverrides = {
     heading: '#5b21b6', //  8.98:1 on background
     primary: '#6d28d9', //  7.10:1 under white text
     'primary-foreground': '#ffffff',
+    'primary-tone': '#6d28d9', //  7.10:1 on background
     secondary: '#f5f3ff',
     'secondary-foreground': '#1e1b2e', // 15.30:1
     accent: '#ddd6fe',
@@ -44,6 +52,7 @@ const VIOLET_TENANT: ThemeOverrides = {
     ring: '#6d28d9',
     destructive: '#9f1239', //  8.02:1 under white text
     'destructive-foreground': '#ffffff',
+    'destructive-tone': '#9f1239', //  8.02:1 on background
     radius: '1rem',
   },
   dark: {
@@ -52,6 +61,7 @@ const VIOLET_TENANT: ThemeOverrides = {
     heading: '#c4b5fd', //  9.78:1 on background
     primary: '#a78bfa', //  6.63:1 under dark text
     'primary-foreground': '#17132a',
+    'primary-tone': '#a78bfa', //  6.63:1 on background
     secondary: '#2a2342',
     'secondary-foreground': '#ffffff', // 14.81:1
     accent: '#a78bfa',
@@ -62,6 +72,7 @@ const VIOLET_TENANT: ThemeOverrides = {
     ring: '#a78bfa',
     destructive: '#fda4af',
     'destructive-foreground': '#17132a', //  9.55:1
+    'destructive-tone': '#fda4af', //  9.55:1 on background
     radius: '1rem',
   },
 };
@@ -138,7 +149,7 @@ function DemoPage({ label }: { label: string }) {
         </div>
       </div>
 
-      <div className="border-destructive space-y-1 rounded-lg border p-4">
+      <div className="border-destructive-tone space-y-1 rounded-lg border p-4">
         <Text variant="subline" tone="destructive" className="text-base">
           <TriangleAlert className="mr-1 inline size-4" aria-hidden />
           Quota Exceeded
@@ -209,8 +220,14 @@ export const SideBySideDark: Story = {
 };
 
 /**
- * A partial override. Only `primary` and `radius` are supplied; every other
- * role falls through to the brand palette, so the Teal accent badge survives.
+ * A partial override. Only the `primary` roles and `radius` are supplied;
+ * every other role falls through to the brand palette, so the Teal accent
+ * badge survives.
+ *
+ * `primary-tone` is patched alongside `primary` on purpose. Moving the surface
+ * alone would leave link text, the active tab and the `info` alert on brand
+ * Cerulean while every button turned amber — the mismatch the split makes
+ * possible, and the one thing worth remembering about it.
  */
 export const PartialOverride: Story = {
   parameters: {
@@ -218,7 +235,7 @@ export const PartialOverride: Story = {
       source: {
         code: [
           '// Unspecified roles keep their brand values — this is a patch, not a replacement.',
-          "<ThemeProvider tokens={{ light: { primary: '#b45309', radius: '0rem' } }}>",
+          "<ThemeProvider tokens={{ light: { primary: '#b45309', 'primary-tone': '#b45309', radius: '0rem' } }}>",
           '  <App />',
           '</ThemeProvider>',
         ].join('\n'),
@@ -233,8 +250,13 @@ export const PartialOverride: Story = {
       <ThemeScope
         tokens={{
           // 5.02:1 under white text; `accent` is untouched, so Teal remains.
-          light: { primary: '#b45309', ring: '#b45309', radius: '0rem' },
-          dark: { primary: '#fdba74', 'primary-foreground': '#001128', radius: '0rem' },
+          light: { primary: '#b45309', 'primary-tone': '#b45309', ring: '#b45309', radius: '0rem' },
+          dark: {
+            primary: '#fdba74',
+            'primary-foreground': '#001128',
+            'primary-tone': '#fdba74', // 11.21:1 on background
+            radius: '0rem',
+          },
         }}
       >
         <DemoPage label="only primary + radius overridden" />

@@ -80,7 +80,7 @@ export const tabsTabVariants = cva(
            * 24px target and the axe run measures it with real geometry. */
           '-mb-px min-h-9 border-b-2 border-transparent px-1 text-muted-foreground',
           'hover:border-border hover:text-foreground',
-          'data-active:border-primary data-active:text-primary',
+          'data-active:border-primary-tone data-active:text-primary-tone',
         ],
         pill: [
           'min-h-7 rounded-sm px-3 text-muted-foreground',

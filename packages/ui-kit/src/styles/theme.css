@@ -73,6 +73,13 @@
   --primary: #007daa; /*  4.65:1 under white text */
   --primary-foreground: #ffffff;
 
+  /*
+   * The same hue as text *on* the page rather than as a surface beneath it.
+   * Light has no tension between the two jobs, so the tone simply follows the
+   * surface; dark does, and the `.dark` block explains what pulls them apart.
+   */
+  --primary-tone: var(--primary); /*  4.65:1 on background */
+
   --secondary: #eef4fc;
   --secondary-foreground: var(--brand-dark-azure); /* 17.09:1 on secondary */
 
@@ -93,6 +100,7 @@
 
   --destructive: var(--brand-maroon);
   --destructive-foreground: #ffffff; /* 10.14:1 on destructive */
+  --destructive-tone: var(--destructive); /* 10.14:1 on background */
 
   /*
    * Status. Not in the brand document — it specifies Maroon for negatives but
@@ -129,9 +137,27 @@
   --border: #566373; /*  3.09:1 on background */
   --input: #566373;
 
-  /* Lightened Cerulean, carrying Dark Azure text rather than white. */
-  --primary: #1287b4; /*  4.64:1 under Dark Azure text, 4.64:1 vs background */
-  --primary-foreground: var(--brand-dark-azure);
+  /*
+   * Surface and text tone part company here.
+   *
+   * One role cannot do both jobs on a dark page, because they pull in
+   * opposite directions. As text on `background` the hue wants to be LIGHT —
+   * the lighter it goes, the better it reads. As a surface carrying its own
+   * label it wants to be DARK — the lighter it goes, the worse that label
+   * reads. A single value has to sit where the two demands cross, and #1287B4
+   * was exactly that compromise: 4.64:1 in both directions. Both cleared AA,
+   * yet the button still looked wrong, because a near-black label on a
+   * saturated mid-tone is the floor rather than a comfortable margin.
+   *
+   * Split, each role goes where it wanted to be all along: the surface
+   * darkens to the light theme's corrected Cerulean and carries white text,
+   * and the tone keeps the lightened value, which is what it was always good
+   * at. `--primary` stays the surface because `bg-primary` is what every
+   * filled component already asks for.
+   */
+  --primary: #007daa; /*  4.65:1 under white text, 4.06:1 vs background */
+  --primary-foreground: #ffffff;
+  --primary-tone: #1287b4; /*  4.64:1 on background */
 
   --secondary: #232f3d;
   --secondary-foreground: #ffffff; /* 13.59:1 on secondary */
@@ -147,9 +173,14 @@
   --highlight-honey: var(--brand-honey);
   --highlight-honey-foreground: var(--brand-dark-azure);
 
-  /* Maroon is 1.86:1 on Dark Azure; lightened so warnings stay readable. */
-  --destructive: #c85d55; /*  4.64:1 vs background */
-  --destructive-foreground: var(--brand-dark-azure); /*  4.64:1 on destructive */
+  /*
+   * Maroon is 1.86:1 on Dark Azure, so both roles lighten away from it — and
+   * then split, for the reason `--primary` sets out above. Validation text is
+   * the tone; the `destructive` button is the surface.
+   */
+  --destructive: #c05046; /*  4.69:1 under white text, 4.03:1 vs background */
+  --destructive-foreground: #ffffff;
+  --destructive-tone: #c85d55; /*  4.64:1 on background */
 
   /* On Dark Azure the status pair needs no correction: Honey is at its best
    * here, and `success` moves into the Teal family it belongs to. */
@@ -183,6 +214,7 @@
   --color-ring: var(--ring);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-tone: var(--primary-tone);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-accent: var(--accent);
@@ -193,6 +225,7 @@
   --color-highlight-honey-foreground: var(--highlight-honey-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-tone: var(--destructive-tone);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
   --color-warning: var(--warning);
