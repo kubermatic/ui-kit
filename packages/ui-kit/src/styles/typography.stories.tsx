@@ -63,7 +63,8 @@ export const Hierarchy: Story = {
       <Text variant="h2">A Second-Level Headline</Text>
       <Text variant="body">
         Headlines use Ubuntu Bold and take the <code className="font-mono">heading</code> colour
-        role, which is Aegean on light backgrounds.
+        role, which is Aegean on light backgrounds. No blue is both legible and recognisably Aegean
+        on Dark Azure, so on dark the role follows <code className="font-mono">foreground</code>.
       </Text>
       <Text variant="h3">A Third-Level Headline</Text>
       <Text variant="small" tone="muted">
@@ -109,7 +110,7 @@ export const Tones: Story = {
   render: () => (
     <div className="space-y-2">
       <Text tone="default">Default — foreground</Text>
-      <Text tone="heading">Heading — Aegean</Text>
+      <Text tone="heading">Heading — Aegean on light, `foreground` on dark</Text>
       <Text tone="primary">Primary — Cerulean, corrected to 4.65:1</Text>
       <Text tone="muted">Muted — secondary metadata</Text>
       <Text tone="destructive">Destructive — Maroon</Text>
