@@ -127,9 +127,15 @@
   --background: var(--brand-dark-azure);
   --foreground: #ffffff; /* 18.90:1 on background */
 
-  /* Aegean is 2.23:1 on Dark Azure and unusable. Lightened to keep headlines
-   * blue rather than switching them to a different brand colour. */
-  --heading: #4183b2; /*  4.60:1 on background */
+  /*
+   * Aegean is 2.23:1 on Dark Azure and unusable, and the blue it was lightened
+   * to (#4183B2) only reached 4.60:1 — past AA by a rounding error, and read
+   * as dim and hard to scan at headline weight. There is no lighter blue that
+   * is still recognisably Aegean, so the role follows `foreground` here and
+   * headlines are simply the brightest text on the page. Light keeps the
+   * brand headline colour, where it has the contrast to spend.
+   */
+  --heading: var(--foreground); /* 18.90:1 on background */
 
   --muted: #232f3d;
   --muted-foreground: #92989e; /*  4.66:1 on muted, 6.49:1 on background */

@@ -256,13 +256,17 @@ export function Sidebar({
       data-side={side}
       aria-label={label}
       /*
-       * `bg-background`, not `bg-muted`. A recessed rail looks nicer, and it
+       * `bg-background`, not `bg-muted`. A recessed rail looks nicer, but it
        * takes every foreground inside the sidebar outside the measured token
        * pairs: `--muted` is only ever measured against `--muted-foreground`,
-       * so the brand wordmark's `text-heading` on it comes to 3.3:1 on the
-       * dark palette — which is what the axe run reported the first time this
-       * was written the other way. The rail is distinguished by its border
-       * instead, and every colour in it is a pair CI already checks.
+       * so nothing in `CONTRAST_PAIRS` says what the brand wordmark's
+       * `text-heading` does on it. Written the other way round, that is what
+       * the axe run caught — `--heading` was a mid blue then and landed at
+       * 3.3:1 on the dark palette. It now follows `--foreground` and would
+       * clear it comfortably, but the reason stands: the number was never
+       * guarded, so it was free to drift either way. The rail is
+       * distinguished by its border instead, and every colour in it is a pair
+       * CI already checks.
        *
        * A product that wants a tinted rail can pass `className="bg-muted"`
        * and owns re-measuring what sits on it.

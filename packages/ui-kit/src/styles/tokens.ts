@@ -35,7 +35,7 @@
 export const COLOR_ROLES = {
   background: 'Page surface.',
   foreground: 'Default text on `background`.',
-  heading: 'Headline text. Aegean on light, lightened on dark.',
+  heading: 'Headline text. Aegean on light; follows `foreground` on dark.',
   muted: 'Recessed surface — cards, wells, table stripes.',
   'muted-foreground': 'Secondary text. Measured on `muted` *and* on `background`.',
   border: 'Hairlines and dividers. Non-text, so the threshold is 3:1.',
