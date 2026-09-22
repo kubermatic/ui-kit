@@ -35,7 +35,7 @@ export function Checkbox({ className, ...props }: CheckboxProps) {
     <BaseCheckbox.Root
       data-slot="checkbox"
       className={cn(
-        'peer flex size-4 shrink-0 items-center justify-center rounded-[4px] border border-input',
+        'peer flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-[4px] border border-input',
         'shadow-xs transition-shadow outline-none',
         'focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50',
         'data-checked:border-primary data-checked:bg-primary data-checked:text-primary-foreground',

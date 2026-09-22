@@ -15,7 +15,10 @@
  */
 'use client';
 
-import { Menu as BaseMenu } from '@base-ui/react/menu';
+import {
+  Menu as BaseMenu,
+  type MenuTriggerProps as BaseMenuTriggerProps,
+} from '@base-ui/react/menu';
 import { Check, ChevronRight, Circle } from 'lucide-react';
 import type { ComponentProps } from 'react';
 
@@ -35,10 +38,38 @@ import { cn } from '../../lib/utils.js';
  * middle-clicked, copied, or opened in a new tab.
  */
 export const Menu = BaseMenu.Root;
-export const MenuTrigger = BaseMenu.Trigger;
 export const MenuGroup = BaseMenu.Group;
 export const MenuRadioGroup = BaseMenu.RadioGroup;
 export const MenuSub = BaseMenu.SubmenuRoot;
+
+export type MenuTriggerProps<Payload = unknown> = BaseMenuTriggerProps<Payload>;
+
+/**
+ * The control that opens the menu.
+ *
+ * Carries no appearance of its own — the "⋯" it usually is, and the avatar or
+ * `Button` it sometimes is, look nothing alike, so the caller styles it. The
+ * one thing it says is that it can be clicked: no UA stylesheet gives a
+ * `<button>` the pointer cursor, which left every consumer adding
+ * `cursor-pointer` by hand and looking inert wherever one forgot.
+ *
+ * Base UI's own props pass straight through, `className` callback and
+ * `payload` generic included, because narrowing either to add one utility
+ * class would cost more than the class is worth.
+ */
+export function MenuTrigger<Payload>({ className, ...props }: MenuTriggerProps<Payload>) {
+  return (
+    <BaseMenu.Trigger
+      data-slot="menu-trigger"
+      className={
+        typeof className === 'function'
+          ? (state) => cn('cursor-pointer', className(state))
+          : cn('cursor-pointer', className)
+      }
+      {...props}
+    />
+  );
+}
 
 const popupClasses = [
   'min-w-[10rem] max-h-[var(--available-height)] overflow-y-auto',
@@ -49,7 +80,7 @@ const popupClasses = [
 ];
 
 const itemClasses = [
-  'relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5',
+  'relative flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5',
   'font-sans text-sm outline-none select-none',
   'data-highlighted:bg-secondary data-highlighted:text-secondary-foreground',
   'data-disabled:pointer-events-none data-disabled:opacity-50',

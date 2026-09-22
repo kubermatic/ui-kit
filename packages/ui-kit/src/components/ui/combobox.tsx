@@ -189,7 +189,7 @@ export function Combobox({
         {clearable && value ? (
           <BaseCombobox.Clear
             aria-label="Clear selection"
-            className="absolute right-8 flex size-6 items-center justify-center rounded-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            className="absolute right-8 flex size-6 cursor-pointer items-center justify-center rounded-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
           >
             <X className="size-3.5" />
           </BaseCombobox.Clear>
@@ -197,7 +197,7 @@ export function Combobox({
 
         <BaseCombobox.Trigger
           aria-label="Open list"
-          className="absolute right-1 flex size-7 items-center justify-center rounded-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          className="absolute right-1 flex size-7 cursor-pointer items-center justify-center rounded-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
         >
           <ChevronDown className="size-4" />
         </BaseCombobox.Trigger>
@@ -242,7 +242,7 @@ function ComboboxList({
                 key={item.value}
                 value={item}
                 className={cn(
-                  'relative flex w-full cursor-default items-center gap-2 rounded-sm py-1.5 pr-8 pl-2',
+                  'relative flex w-full cursor-pointer items-center gap-2 rounded-sm py-1.5 pr-8 pl-2',
                   'font-sans text-sm outline-none select-none',
                   'data-highlighted:bg-secondary data-highlighted:text-secondary-foreground',
                   'data-disabled:pointer-events-none data-disabled:opacity-50',

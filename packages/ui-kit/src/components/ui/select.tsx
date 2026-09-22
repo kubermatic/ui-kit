@@ -66,7 +66,7 @@ export function SelectTrigger({
       data-slot="select-trigger"
       data-size={size}
       className={cn(
-        'flex w-full items-center justify-between gap-2 rounded-md border border-input bg-background px-3',
+        'flex w-full cursor-pointer items-center justify-between gap-2 rounded-md border border-input bg-background px-3',
         'font-sans text-sm text-foreground shadow-xs transition-[color,box-shadow] outline-none',
         'data-[size=default]:h-9 data-[size=sm]:h-8',
         'focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50',
@@ -145,7 +145,7 @@ export function SelectItem({ className, children, ...props }: SelectItemProps) {
     <BaseSelect.Item
       data-slot="select-item"
       className={cn(
-        'relative flex w-full cursor-default items-center gap-2 rounded-sm py-1.5 pr-8 pl-2',
+        'relative flex w-full cursor-pointer items-center gap-2 rounded-sm py-1.5 pr-8 pl-2',
         'font-sans text-sm outline-none select-none',
         'data-highlighted:bg-secondary data-highlighted:text-secondary-foreground',
         'data-disabled:pointer-events-none data-disabled:opacity-50',

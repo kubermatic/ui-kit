@@ -224,6 +224,7 @@ export {
   type MenuContentProps,
   type MenuItemProps,
   type MenuLinkItemProps,
+  type MenuTriggerProps,
 } from './components/ui/menu.js';
 
 /* ------------------------------------------------------------- navigation */

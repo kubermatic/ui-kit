@@ -58,7 +58,7 @@ export function RadioGroupItem({ className, children, ...props }: RadioProps) {
     <Radio.Root
       data-slot="radio-group-item"
       className={cn(
-        'flex size-4 shrink-0 items-center justify-center rounded-full border border-input',
+        'flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-full border border-input',
         'shadow-xs transition-shadow outline-none',
         'focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50',
         'data-checked:border-primary data-checked:bg-primary',
