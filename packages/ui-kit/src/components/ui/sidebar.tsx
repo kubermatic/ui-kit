@@ -509,7 +509,7 @@ export function SidebarMenuButton({
   const showLabelsOnly = collapsed && !isMobile;
 
   const classes = cn(
-    'flex h-9 w-full items-center gap-2.5 overflow-hidden rounded-md px-2 text-left',
+    'flex h-9 w-full cursor-pointer items-center gap-2.5 overflow-hidden rounded-md px-2 text-left',
     'font-sans text-sm transition-colors outline-none',
     'focus-visible:ring-[3px] focus-visible:ring-ring/50',
     "[&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
@@ -598,7 +598,7 @@ export function SidebarTrigger({
         else toggle();
       }}
       className={cn(
-        'flex size-8 shrink-0 items-center justify-center rounded-md',
+        'flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-md',
         'text-muted-foreground transition-colors outline-none',
         'hover:bg-secondary hover:text-secondary-foreground',
         'focus-visible:ring-[3px] focus-visible:ring-ring/50',

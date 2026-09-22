@@ -112,7 +112,7 @@ export function DrawerContent({
           <BaseDialog.Close
             aria-label={closeLabel}
             className={cn(
-              'absolute top-4 right-4 flex size-7 items-center justify-center rounded-sm',
+              'absolute top-4 right-4 flex size-7 cursor-pointer items-center justify-center rounded-sm',
               'text-muted-foreground transition-colors outline-none',
               'hover:bg-secondary hover:text-secondary-foreground',
               'focus-visible:ring-[3px] focus-visible:ring-ring/50',

@@ -150,7 +150,7 @@ function ToastList() {
         <BaseToast.Close
           aria-label="Dismiss"
           className={cn(
-            'col-start-3 row-start-1 flex size-6 items-center justify-center rounded-sm',
+            'col-start-3 row-start-1 flex size-6 cursor-pointer items-center justify-center rounded-sm',
             'text-muted-foreground transition-colors outline-none',
             'hover:bg-secondary hover:text-secondary-foreground',
             'focus-visible:ring-[3px] focus-visible:ring-ring/50',

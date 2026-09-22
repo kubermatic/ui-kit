@@ -56,6 +56,18 @@ describe('Button', () => {
     expect(link).toHaveAttribute('href', '/docs');
   });
 
+  /*
+   * No UA stylesheet gives a `<button>` the pointer — only links get it — so
+   * every consumer was adding `cursor-pointer` by hand and the screens where
+   * one was forgotten looked inert.
+   */
+  it('reads as clickable under the pointer', () => {
+    render(<Button>Deploy</Button>);
+
+    const button = screen.getByRole('button', { name: 'Deploy' });
+    expect(button.classList.contains('cursor-pointer')).toBe(true);
+  });
+
   it('lets a consumer className override a variant utility', () => {
     render(<Button className="bg-muted">Deploy</Button>);
 

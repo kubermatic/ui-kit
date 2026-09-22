@@ -23,10 +23,16 @@ import { cn } from '../../lib/utils.js';
 
 export const buttonVariants = cva(
   [
-    'inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-md',
+    'inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-md',
     'text-sm font-medium transition-colors outline-none',
     'focus-visible:ring-[3px] focus-visible:ring-ring/50',
     'disabled:pointer-events-none disabled:opacity-50',
+    /* `disabled` takes itself out of hit-testing, so the cursor falls to the
+     * parent and the pointer above never reaches the mouse. A
+     * `focusableWhenDisabled` button is the case that needs saying: it is
+     * `aria-disabled`, not `disabled`, so it stays hoverable and would
+     * otherwise offer the pointer for something it will not do. */
+    'aria-disabled:cursor-default',
     "[&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4",
   ],
   {

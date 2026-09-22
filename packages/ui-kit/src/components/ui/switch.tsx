@@ -36,7 +36,7 @@ export function Switch({ className, ...props }: SwitchProps) {
     <BaseSwitch.Root
       data-slot="switch"
       className={cn(
-        'peer inline-flex h-5 w-9 shrink-0 items-center rounded-full border border-transparent',
+        'peer inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border border-transparent',
         'bg-input shadow-xs transition-colors outline-none',
         'focus-visible:ring-[3px] focus-visible:ring-ring/50',
         'data-checked:bg-primary',

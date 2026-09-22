@@ -58,7 +58,7 @@ export function ToggleGroupItem({ className, ...props }: ToggleGroupItemProps) {
     <Toggle
       data-slot="toggle-group-item"
       className={cn(
-        'inline-flex h-7 min-w-7 items-center justify-center gap-1.5 rounded-sm px-2',
+        'inline-flex h-7 min-w-7 cursor-pointer items-center justify-center gap-1.5 rounded-sm px-2',
         'font-sans text-sm font-medium whitespace-nowrap transition-colors outline-none',
         'hover:bg-secondary hover:text-secondary-foreground',
         'focus-visible:ring-[3px] focus-visible:ring-ring/50',

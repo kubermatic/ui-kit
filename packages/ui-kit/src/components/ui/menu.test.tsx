@@ -112,4 +112,64 @@ describe('Menu', () => {
     await openMenu();
     expect(screen.getByRole('menuitem', { name: 'Settings' })).toHaveAttribute('href', '/settings');
   });
+
+  /*
+   * shadcn's menus copy the desktop convention of an arrow cursor over a menu
+   * row. On the web that reads as "not clickable" next to every other control
+   * on the page, and both products had been overriding it row by row.
+   */
+  it('reads its rows as clickable', async () => {
+    render(
+      <Menu>
+        <MenuTrigger render={<Button>Actions</Button>} />
+        <MenuContent>
+          <MenuItem>Edit</MenuItem>
+        </MenuContent>
+      </Menu>,
+    );
+
+    await openMenu();
+
+    const item = screen.getByRole('menuitem', { name: 'Edit' });
+    expect(item.classList.contains('cursor-pointer')).toBe(true);
+    expect(item.classList.contains('cursor-default')).toBe(false);
+  });
+});
+
+/*
+ * The trigger used to be a bare re-export of Base UI's, which meant a plain
+ * `<button>` with the UA stylesheet's arrow cursor and nothing else. It stays
+ * unstyled otherwise: a "⋯", an avatar and a `Button` look nothing alike.
+ */
+describe('MenuTrigger', () => {
+  it('keeps the classes it was given, and says it can be clicked', () => {
+    render(
+      <Menu>
+        <MenuTrigger className="size-8 rounded-md">Actions</MenuTrigger>
+        <MenuContent>
+          <MenuItem>Edit</MenuItem>
+        </MenuContent>
+      </Menu>,
+    );
+
+    const trigger = screen.getByRole('button', { name: 'Actions' });
+    expect(trigger).toHaveAttribute('data-slot', 'menu-trigger');
+    expect(trigger.classList.contains('cursor-pointer')).toBe(true);
+    expect(trigger.classList.contains('size-8')).toBe(true);
+  });
+
+  it('lets a caller take the cursor back', () => {
+    render(
+      <Menu>
+        <MenuTrigger className="cursor-default">Actions</MenuTrigger>
+        <MenuContent>
+          <MenuItem>Edit</MenuItem>
+        </MenuContent>
+      </Menu>,
+    );
+
+    const trigger = screen.getByRole('button', { name: 'Actions' });
+    expect(trigger.classList.contains('cursor-default')).toBe(true);
+    expect(trigger.classList.contains('cursor-pointer')).toBe(false);
+  });
 });
