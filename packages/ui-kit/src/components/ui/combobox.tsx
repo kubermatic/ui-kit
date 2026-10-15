@@ -153,7 +153,7 @@ export function Combobox({
       required={required}
       name={name}
     >
-      <div
+      <BaseCombobox.InputGroup
         data-slot="combobox"
         className={cn(
           'relative flex h-9 w-full items-center rounded-md border border-input bg-background',
@@ -201,7 +201,7 @@ export function Combobox({
         >
           <ChevronDown className="size-4" />
         </BaseCombobox.Trigger>
-      </div>
+      </BaseCombobox.InputGroup>
 
       <ComboboxList emptyMessage={emptyMessage} renderItem={renderItem} />
     </BaseCombobox.Root>
@@ -329,10 +329,10 @@ export function MultiCombobox({
       required={required}
       name={name}
     >
-      <BaseCombobox.Chips
+      <BaseCombobox.InputGroup
         data-slot="multi-combobox"
         className={cn(
-          'flex min-h-9 w-full flex-wrap items-center gap-1.5 rounded-md border border-input bg-background px-2 py-1',
+          'flex min-h-9 w-full flex-wrap items-center rounded-md border border-input bg-background px-2 py-1',
           'shadow-xs transition-[color,box-shadow]',
           'focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50',
           'has-disabled:cursor-not-allowed has-disabled:opacity-50',
@@ -340,36 +340,38 @@ export function MultiCombobox({
           className,
         )}
       >
-        {selected.map((item) => (
-          <BaseCombobox.Chip
-            key={item.value}
-            className={cn(
-              'flex items-center gap-1 rounded-sm bg-secondary py-0.5 pr-1 pl-2',
-              'font-sans text-xs font-medium text-secondary-foreground',
-              'data-highlighted:bg-primary data-highlighted:text-primary-foreground',
-            )}
-          >
-            {item.label}
-            <BaseCombobox.ChipRemove
-              aria-label={`Remove ${item.label}`}
-              className="flex size-4 items-center justify-center rounded-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        <BaseCombobox.Chips className="flex w-full flex-wrap items-center gap-1.5">
+          {selected.map((item) => (
+            <BaseCombobox.Chip
+              key={item.value}
+              className={cn(
+                'flex items-center gap-1 rounded-sm bg-secondary py-0.5 pr-1 pl-2',
+                'font-sans text-xs font-medium text-secondary-foreground',
+                'data-highlighted:bg-primary data-highlighted:text-primary-foreground',
+              )}
             >
-              <X className="size-3" />
-            </BaseCombobox.ChipRemove>
-          </BaseCombobox.Chip>
-        ))}
+              {item.label}
+              <BaseCombobox.ChipRemove
+                aria-label={`Remove ${item.label}`}
+                className="flex size-4 items-center justify-center rounded-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              >
+                <X className="size-3" />
+              </BaseCombobox.ChipRemove>
+            </BaseCombobox.Chip>
+          ))}
 
-        <BaseCombobox.Input
-          data-testid={testId}
-          placeholder={selected.length === 0 ? placeholder : undefined}
-          aria-label={ariaLabel}
-          aria-labelledby={ariaLabelledby}
-          className={cn(
-            'h-7 min-w-24 flex-1 bg-transparent px-1 font-sans text-sm text-foreground',
-            'outline-none placeholder:text-muted-foreground',
-          )}
-        />
-      </BaseCombobox.Chips>
+          <BaseCombobox.Input
+            data-testid={testId}
+            placeholder={selected.length === 0 ? placeholder : undefined}
+            aria-label={ariaLabel}
+            aria-labelledby={ariaLabelledby}
+            className={cn(
+              'h-7 min-w-24 flex-1 bg-transparent px-1 font-sans text-sm text-foreground',
+              'outline-none placeholder:text-muted-foreground',
+            )}
+          />
+        </BaseCombobox.Chips>
+      </BaseCombobox.InputGroup>
 
       <ComboboxList emptyMessage={emptyMessage} renderItem={renderItem} />
     </BaseCombobox.Root>
