@@ -23,6 +23,48 @@ import { Field } from './field';
 
 const NAMESPACES = ['backend', 'payments', 'ingress', 'data-pipeline'];
 
+/*
+ * Widths for the anchoring test below. They differ so that `--anchor-width`
+ * names which element Base UI measured rather than merely agreeing by
+ * coincidence; jsdom reports every rect as zero, so without a stub the two
+ * candidates are indistinguishable.
+ */
+const FIELD_WIDTH = 400;
+const INPUT_WIDTH = 96;
+
+function stubFieldAndInputWidths() {
+  const spy = vi.spyOn(Element.prototype, 'getBoundingClientRect');
+  spy.mockImplementation(function (this: Element) {
+    const width = this.matches('[data-slot="multi-combobox"]')
+      ? FIELD_WIDTH
+      : this.tagName === 'INPUT'
+        ? INPUT_WIDTH
+        : 0;
+    return {
+      x: 0,
+      y: 0,
+      top: 0,
+      left: 0,
+      right: width,
+      bottom: 36,
+      width,
+      height: 36,
+      toJSON: () => ({}),
+    };
+  });
+  return () => {
+    spy.mockRestore();
+  };
+}
+
+/* The positioner is whichever ancestor of the popup carries the anchor vars. */
+function positionerOf(popup: Element): HTMLElement {
+  for (let el = popup.parentElement; el; el = el.parentElement) {
+    if (el.style.getPropertyValue('--anchor-width')) return el;
+  }
+  throw new Error('no positioner with --anchor-width found above the popup');
+}
+
 /* A controlled harness, since every interaction here changes the value. */
 function Harness({ initial = [] as string[] }: { initial?: string[] }) {
   const [value, setValue] = useState<string[]>(initial);
@@ -94,6 +136,30 @@ describe('MultiCombobox', () => {
     await userEvent.click(screen.getByTestId('picker'));
     await userEvent.click(screen.getByRole('option', { name: 'backend' }));
     expect(screen.queryByPlaceholderText('Select namespaces…')).not.toBeInTheDocument();
+  });
+
+  /*
+   * The popup is sized `w-[var(--anchor-width)]`, and Base UI resolves that
+   * anchor as `inputGroupElement ?? inputElement`. Only `Combobox.InputGroup`
+   * registers the former, so a control that renders the chips container alone
+   * anchors its popup to the `<input>` — which here is `flex-1` beside the
+   * chips, so the popup took the width of the gap left on the chip row and
+   * resized on every selection (#49).
+   */
+  it('anchors the popup to the field box rather than to the input', async () => {
+    const restore = stubFieldAndInputWidths();
+    try {
+      render(<Harness initial={['backend', 'payments']} />);
+      await userEvent.click(screen.getByTestId('picker'));
+
+      const popup = document.querySelector('[data-slot="combobox-content"]');
+      expect(popup).not.toBeNull();
+      expect(positionerOf(popup!).style.getPropertyValue('--anchor-width')).toBe(
+        `${FIELD_WIDTH}px`,
+      );
+    } finally {
+      restore();
+    }
   });
 
   it('takes its accessible name from a surrounding Field', () => {

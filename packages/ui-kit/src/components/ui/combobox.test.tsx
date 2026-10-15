@@ -23,6 +23,47 @@ import { Field } from './field';
 
 const CLUSTERS = ['prod-eu-1', 'prod-us-1', 'staging'];
 
+/*
+ * See the anchoring test at the end of this file. The two widths differ so
+ * that `--anchor-width` names which element Base UI measured — jsdom reports
+ * every rect as zero, so without a stub the candidates are indistinguishable.
+ */
+const FIELD_WIDTH = 400;
+const INPUT_WIDTH = 96;
+
+function stubFieldAndInputWidths() {
+  const spy = vi.spyOn(Element.prototype, 'getBoundingClientRect');
+  spy.mockImplementation(function (this: Element) {
+    const width = this.matches('[data-slot="combobox"]')
+      ? FIELD_WIDTH
+      : this.tagName === 'INPUT'
+        ? INPUT_WIDTH
+        : 0;
+    return {
+      x: 0,
+      y: 0,
+      top: 0,
+      left: 0,
+      right: width,
+      bottom: 36,
+      width,
+      height: 36,
+      toJSON: () => ({}),
+    };
+  });
+  return () => {
+    spy.mockRestore();
+  };
+}
+
+/* The positioner is whichever ancestor of the popup carries the anchor vars. */
+function positionerOf(popup: Element): HTMLElement {
+  for (let el = popup.parentElement; el; el = el.parentElement) {
+    if (el.style.getPropertyValue('--anchor-width')) return el;
+  }
+  throw new Error('no positioner with --anchor-width found above the popup');
+}
+
 describe('Combobox', () => {
   it('shows the selected option in the input', () => {
     render(
@@ -235,5 +276,31 @@ describe('Combobox labelling', () => {
     );
     await userEvent.type(screen.getByTestId('picker'), 'prod');
     expect(screen.getByTestId('picker')).toHaveValue('prod');
+  });
+
+  /*
+   * The same anchoring contract the multi-select has, asserted here too. This
+   * control's input is `w-full`, so anchoring to it looked right and was not —
+   * the input excludes the field's borders, which left the popup two pixels
+   * narrow and a pixel off. Declaring the anchor fixes that and, more to the
+   * point, stops the single-select from depending on a coincidence the
+   * multi-select already lost (#49).
+   */
+  it('anchors the popup to the field box rather than to the input', async () => {
+    const restore = stubFieldAndInputWidths();
+    try {
+      render(
+        <Combobox options={CLUSTERS} value={null} onValueChange={vi.fn()} data-testid="picker" />,
+      );
+      await userEvent.click(screen.getByTestId('picker'));
+
+      const popup = document.querySelector('[data-slot="combobox-content"]');
+      expect(popup).not.toBeNull();
+      expect(positionerOf(popup!).style.getPropertyValue('--anchor-width')).toBe(
+        `${FIELD_WIDTH}px`,
+      );
+    } finally {
+      restore();
+    }
   });
 });
