@@ -212,18 +212,6 @@ export function Combobox({
  * The popup, shared by both controls below. Extracted so that single- and
  * multi-select cannot drift into two different-looking lists — the difference
  * between them belongs in the control, not in the options.
- *
- * `--anchor-width` below is why both controls render their field box as a
- * `Combobox.InputGroup` rather than a plain `div`. Base UI resolves the
- * positioner's anchor as `inputGroupElement ?? inputElement`, and only
- * `InputGroup` registers the former — so without one the popup anchors to the
- * `<input>`. In the multi-select that input is `flex-1` next to the chips, so
- * the popup took the width of whatever gap was left on the chip row and
- * changed size on every selection (#49). The single-select looked right
- * because its input is `w-full` — but only looked it: the input excludes the
- * field's borders, so the popup came out two pixels narrow and a pixel off.
- * Both declare the anchor now, rather than one of them nearly getting away
- * with not declaring it.
  */
 function ComboboxList({
   emptyMessage,

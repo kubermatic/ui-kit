@@ -278,14 +278,6 @@ describe('Combobox labelling', () => {
     expect(screen.getByTestId('picker')).toHaveValue('prod');
   });
 
-  /*
-   * The same anchoring contract the multi-select has, asserted here too. This
-   * control's input is `w-full`, so anchoring to it looked right and was not —
-   * the input excludes the field's borders, which left the popup two pixels
-   * narrow and a pixel off. Declaring the anchor fixes that and, more to the
-   * point, stops the single-select from depending on a coincidence the
-   * multi-select already lost (#49).
-   */
   it('anchors the popup to the field box rather than to the input', async () => {
     const restore = stubFieldAndInputWidths();
     try {
