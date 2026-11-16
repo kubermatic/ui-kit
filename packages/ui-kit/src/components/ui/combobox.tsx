@@ -233,7 +233,7 @@ function ComboboxList({
             'data-ending-style:scale-95 data-ending-style:opacity-0',
           )}
         >
-          <BaseCombobox.Empty className="px-2 py-3 text-center font-sans text-sm text-muted-foreground">
+          <BaseCombobox.Empty className="px-2 py-3 text-center font-sans text-sm text-muted-foreground empty:py-0">
             {emptyMessage}
           </BaseCombobox.Empty>
           <BaseCombobox.List>
