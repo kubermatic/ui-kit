@@ -1,5 +1,11 @@
 # @kubermatic/ui-kit
 
+## 0.6.2
+
+### Patch Changes
+
+- [#92](https://github.com/kubermatic/ui-kit/pull/92) [`af52e99`](https://github.com/kubermatic/ui-kit/commit/af52e99880a1a598bbb23a67c6a5951f972e2f6f) Thanks [@iammerus](https://github.com/iammerus)! - Remove the blank space above matching options in Combobox and MultiCombobox dropdowns while preserving the no-matches message and screen reader announcements.
+
 ## 0.6.1
 
 ### Patch Changes
