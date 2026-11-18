@@ -24,7 +24,9 @@
     "paths": {
       "@/*": ["./packages/ui-kit/src/*"],
       "@kubermatic/ui-kit": ["./packages/ui-kit/src/index.ts"],
-      "@kubermatic/ui-kit/*": ["./packages/ui-kit/src/*"]
+      "@kubermatic/ui-kit/*": ["./packages/ui-kit/src/*"],
+      "@kubermatic/embed": ["./packages/embed/src/index.ts"],
+      "@kubermatic/embed/*": ["./packages/embed/src/*/index.ts"]
     }
   },
   "include": [

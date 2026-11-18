@@ -19,20 +19,22 @@ npm run storybook     # http://localhost:6006
 
 ## Layout
 
-A monorepo on plain npm workspaces — no pnpm, Turborepo or Nx. Two packages,
+A monorepo on plain npm workspaces — no pnpm, Turborepo or Nx. Three packages,
 because they have different consumers:
 
 ```
 packages/ui-kit/         → @kubermatic/ui-kit         tokens, theming, components
 packages/eslint-config/  → @kubermatic/eslint-config  shared ESLint flat config
+packages/embed/          → @kubermatic/embed          client for pages embedded in the KDP Dashboard
 .storybook/              → one catalogue over every package
 hack/ci/                 → what Prow runs
 .prow/                   → the presubmit definition
 ```
 
 `@kubermatic/eslint-config` is separate so a product that only wants the lint
-rules does not pull React, Tailwind and Base UI along with them. The story glob
-is `packages/*/src/**`, so adding a third package needs no Storybook change.
+rules does not pull React, Tailwind and Base UI along with them, and
+`@kubermatic/embed` so a page embedded in the Dashboard does not either. The
+story glob is `packages/*/src/**`, so adding a package needs no Storybook change.
 
 The workspace root is `private: true` and publishes nothing. All devDependencies
 live at the root; the packages declare only what they genuinely ship.
