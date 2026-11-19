@@ -32,6 +32,7 @@ export {
 export type {
   EmbedContext,
   EmbedVerb,
+  FieldOption,
   GroupKind,
   KdpObject,
   KdpObjectMeta,

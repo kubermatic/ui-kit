@@ -44,6 +44,12 @@ export interface KdpObject {
   [key: string]: unknown;
 }
 
+/** One choice for a field, as the Dashboard's forms offer it. */
+export interface FieldOption {
+  value: string;
+  label: string;
+}
+
 export interface EmbedContext {
   /** The workspace path without the `root:` prefix, e.g. `acme:team`. */
   workspace: string;
@@ -75,6 +81,11 @@ export interface OperationContracts {
     params: { kind: string; name: string; identifier: string; namespace?: string };
     result: KdpObject[];
   };
+  /** `field` is a path such as `spec.llmModels[].id`; `[]` steps into an array's items. */
+  getFieldOptions: {
+    params: { kind: string; field: string; namespace?: string };
+    result: FieldOption[];
+  };
   can: { params: { verb: EmbedVerb; kind: string; namespace?: string }; result: boolean };
 }
 
@@ -89,6 +100,7 @@ export const OPERATIONS = [
   'patchObject',
   'deleteObject',
   'getRelated',
+  'getFieldOptions',
   'can',
 ] as const satisfies readonly Operation[];
 

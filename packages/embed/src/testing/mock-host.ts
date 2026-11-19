@@ -20,6 +20,7 @@ import {
   RESPONSE,
   type EmbedContext,
   type EmbedVerb,
+  type FieldOption,
   type KdpObject,
   type NotifyMessage,
   type Operation,
@@ -49,6 +50,12 @@ export interface MockHostOptions {
    * part of the key. Keys without an entry return an empty list.
    */
   related?: Record<string, readonly KdpObject[]>;
+  /**
+   * What `getFieldOptions(kind, field)` returns, keyed by kind and then by field path, e.g.
+   * `{ LLMAccess: { 'spec.llmModels[].id': [...] } }`. The namespace is not part of the key. A kind
+   * or field without an entry returns an empty list.
+   */
+  fieldOptions?: Record<string, Record<string, readonly FieldOption[]>>;
   /** The answer to every `can` question, or a function that decides per question. Defaults to `true`. */
   can?: boolean | ((check: MockCanCheck) => boolean);
   /** Makes an operation always fail with the given code. */
@@ -151,6 +158,8 @@ export function createMockHost(options: MockHostOptions = {}): MockHost {
     getRelated: ({ kind, name, identifier }) => [
       ...(options.related?.[`${kind}/${name}/${identifier}`] ?? []),
     ],
+    getFieldOptions: ({ kind, field }) =>
+      structuredClone([...(options.fieldOptions?.[kind]?.[field] ?? [])]),
     can: (check) =>
       typeof options.can === 'function' ? options.can(check) : (options.can ?? true),
   };

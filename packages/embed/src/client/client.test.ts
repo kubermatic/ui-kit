@@ -17,7 +17,7 @@
 import { afterEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
 
 import { KdpEmbedError } from '../protocol/errors.js';
-import type { EmbedContext, KdpObject, Theme } from '../protocol/messages.js';
+import type { EmbedContext, FieldOption, KdpObject, Theme } from '../protocol/messages.js';
 import { type FakeHost, createFakeHost } from '../test/fake-host.js';
 import { type KdpClient, createClient } from './client.js';
 
@@ -108,6 +108,20 @@ describe('createClient', () => {
       [],
     ],
     [
+      'getFieldOptions',
+      (c) => c.getFieldOptions('LLMAccess', 'spec.llmModels[].id'),
+      'getFieldOptions',
+      { kind: 'LLMAccess', field: 'spec.llmModels[].id' },
+      [{ value: 'llama', label: 'Llama' }],
+    ],
+    [
+      'getFieldOptions in a namespace',
+      (c) => c.getFieldOptions('LLMAccess', 'spec.llmModels[].id', 'default'),
+      'getFieldOptions',
+      { kind: 'LLMAccess', field: 'spec.llmModels[].id', namespace: 'default' },
+      [],
+    ],
+    [
       'can',
       (c) => c.can('delete', 'LLMAccess', 'default'),
       'can',
@@ -136,6 +150,9 @@ describe('createClient', () => {
         Promise<KdpObject[]>
       >();
       expectTypeOf(c.deleteObject('LLMAccess', 'a')).toEqualTypeOf<Promise<null>>();
+      expectTypeOf(c.getFieldOptions('LLMAccess', 'spec.llmModels[].id')).toEqualTypeOf<
+        Promise<FieldOption[]>
+      >();
       expectTypeOf(c.can('get', 'LLMAccess')).toEqualTypeOf<Promise<boolean>>();
       // @ts-expect-error -- the type parameter must be a KdpObject
       void c.getObject<{ name: string }>('LLMAccess', 'a');
@@ -176,6 +193,16 @@ describe('createClient', () => {
     const error = await result.catch((e: unknown) => e);
     expect(error).toBeInstanceOf(KdpEmbedError);
     expect(error).toMatchObject({ code: 'not-consented', kind: 'boundary' });
+  });
+
+  it('rejects getFieldOptions with the failure the host sends', async () => {
+    open();
+    const result = client.getFieldOptions('LLMAccess', 'spec.llmModels[].id', 'default');
+    const { id } = await host.nextRequest();
+    host.fail(id, { code: 'not-found', message: 'No field source' });
+    const error = await result.catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(KdpEmbedError);
+    expect(error).toMatchObject({ code: 'not-found', message: 'No field source' });
   });
 
   it('turns a malformed failure into a protocol error with a message', async () => {

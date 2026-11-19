@@ -73,6 +73,7 @@ describe('OPERATIONS', () => {
       'patchObject',
       'deleteObject',
       'getRelated',
+      'getFieldOptions',
       'can',
     ]);
   });
@@ -81,6 +82,10 @@ describe('OPERATIONS', () => {
 describe('isOperation', () => {
   it.each(OPERATIONS)('accepts %s', (operation) => {
     expect(isOperation(operation)).toBe(true);
+  });
+
+  it('accepts getFieldOptions', () => {
+    expect(isOperation('getFieldOptions')).toBe(true);
   });
 
   it.each(['listobjects', 'watch', 'toString', '', 1, null])('rejects %j', (value) => {

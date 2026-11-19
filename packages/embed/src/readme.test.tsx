@@ -44,11 +44,13 @@ const connectMock = vi.mocked(connect);
 let messages: string[];
 let themes: Theme[];
 let lists: KdpObject[][];
+let pickers: { id: string; name: string }[][];
 let hosts: MockHost[];
 
 const showMessage = (message: string) => messages.push(message);
 const applyTheme = (theme: Theme) => themes.push(theme);
 const renderList = (objects: KdpObject[]) => lists.push(objects);
+const renderPicker = (items: { id: string; name: string }[]) => pickers.push(items);
 
 function mockHost(...args: Parameters<typeof createMockHost>): MockHost {
   const host = createMockHost(...args);
@@ -62,6 +64,7 @@ beforeEach(() => {
   messages = [];
   themes = [];
   lists = [];
+  pickers = [];
   hosts = [];
 });
 
@@ -149,6 +152,12 @@ async function clientTour(client: KdpClient) {
   return { accesses, access, secrets };
 }
 
+// README: Field options
+async function modelPicker(client: KdpClient) {
+  const models = await client.getFieldOptions('LLMAccess', 'spec.llmModels[].id', 'default');
+  renderPicker(models.map(({ value, label }) => ({ id: value, name: label })));
+}
+
 // README: Errors
 async function deleteWithErrors(client: KdpClient) {
   try {
@@ -213,6 +222,16 @@ describe('README examples', () => {
     expect(access).toEqual(teamA);
     expect(secrets).toEqual([secret]);
     expect(host.objects.LLMAccess).toEqual([{ ...teamA, spec: { model: 'mistral' } }]);
+  });
+
+  it('the model picker gets the field options', async () => {
+    const host = mockHost({
+      fieldOptions: {
+        LLMAccess: { 'spec.llmModels[].id': [{ value: 'llama-3', label: 'Llama 3' }] },
+      },
+    });
+    await modelPicker(host.client);
+    expect(pickers).toEqual([[{ id: 'llama-3', name: 'Llama 3' }]]);
   });
 
   it.each([

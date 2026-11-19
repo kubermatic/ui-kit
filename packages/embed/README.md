@@ -145,6 +145,7 @@ for the object shape (`client.getObject<LLMAccess>(…)`); it is not checked at 
 | `patchObject(kind, name, patch, namespace?)`     | The patched object                             |
 | `deleteObject(kind, name, namespace?)`           | `null`                                         |
 | `getRelated(kind, name, identifier, namespace?)` | A list of related objects, possibly empty      |
+| `getFieldOptions(kind, field, namespace?)`       | A list of `{ value, label }`, possibly empty   |
 | `can(verb, kind, namespace?)`                    | `true` or `false`                              |
 | `on(event, listener)`                            | — returns a function that removes the listener |
 | `close()`                                        | — ends the connection; idempotent              |
@@ -178,6 +179,8 @@ const secrets = await client.getRelated('LLMAccess', 'team-a', 'connection-detai
 - **`getRelated`** takes the _source_ object (`kind`, `name`, `namespace`) and the related-resource
   `identifier` from your `PublishedResource`, and returns every related object for that identifier.
   See [Related objects](#related-objects) for what the objects must carry.
+- **`getFieldOptions`** returns the choices the Dashboard's forms offer for a field. See
+  [Field options](#field-options).
 - **`can`** is advisory, for deciding whether to show a button. It asks the Dashboard every time and
   is not cached. It answers `true` only when the request would pass the Dashboard's checks (for a
   mutating verb: declared and consented) and the user's permissions allow it. A `true` is not a
@@ -224,13 +227,14 @@ The code lists are exported as `BOUNDARY_ERROR_CODES`, `PLATFORM_ERROR_CODES`,
 client already connected to it over a real `MessageChannel`. It applies no access rules: a call
 fails only when `fail` says so, or with `not-found` / `conflict` for a missing or existing object.
 
-| Option    | Meaning                                                                                                  |
-| --------- | -------------------------------------------------------------------------------------------------------- |
-| `context` | Merged over a default context (workspace `demo`, service `demo`, theme `light`)                          |
-| `objects` | The objects each kind starts with, e.g. `{ LLMAccess: [...] }`. Copied; an omitted namespace matches any |
-| `related` | What `getRelated` returns, keyed by `` `${kind}/${name}/${identifier}` ``; other keys return `[]`        |
-| `can`     | The answer to every `can`, or a function `({ verb, kind, namespace }) => boolean`. Defaults to `true`    |
-| `fail`    | Makes an operation always fail with a code, e.g. `{ deleteObject: 'not-consented' }`                     |
+| Option         | Meaning                                                                                                                       |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `context`      | Merged over a default context (workspace `demo`, service `demo`, theme `light`)                                               |
+| `objects`      | The objects each kind starts with, e.g. `{ LLMAccess: [...] }`. Copied; an omitted namespace matches any                      |
+| `related`      | What `getRelated` returns, keyed by `` `${kind}/${name}/${identifier}` ``; other keys return `[]`                             |
+| `fieldOptions` | What `getFieldOptions` returns per kind and field, e.g. `{ LLMAccess: { 'spec.llmModels[].id': [...] } }`; others return `[]` |
+| `can`          | The answer to every `can`, or a function `({ verb, kind, namespace }) => boolean`. Defaults to `true`                         |
+| `fail`         | Makes an operation always fail with a code, e.g. `{ deleteObject: 'not-consented' }`                                          |
 
 The host exposes `client`, `objects` (a copy of the current state per kind, reflecting the client's
 changes), `notifyTheme(theme)` and `close()`, which disconnects the client as the Dashboard does.
@@ -305,9 +309,9 @@ spec:
 ```
 
 - **`access`** declares only the mutating verbs `create`, `patch` and `delete`. Reading
-  (`listObjects`, `getObject`, `getRelated`) every kind of the service is implicit. A mutation that
-  is not declared fails with `not-declared` without reaching the platform. Omit `access` for a
-  read-only extension.
+  (`listObjects`, `getObject`, `getRelated`, `getFieldOptions`) every kind of the service is
+  implicit. A mutation that is not declared fails with `not-declared` without reaching the platform.
+  Omit `access` for a read-only extension.
 - **`url`** must be absolute and on a different origin than the Dashboard; use `https`. A URL on the
   Dashboard's own origin is not rendered.
 - **Placeholders** in the URL are replaced by the Dashboard: `{{workspace}}` and `{{connector}}` (the
@@ -357,6 +361,27 @@ labels:
 ```
 
 Objects without that label, or with one naming another resource, are left out of the result.
+
+## Field options
+
+`getFieldOptions(kind, field, namespace?)` returns the value choices that the CRD of `kind` declares
+for `field`, as `{ value, label }` pairs: the same list the Dashboard's own form shows for that
+field. Use it to fill a picker, e.g. the models an `LLMAccess` may reference:
+
+```ts
+const models = await client.getFieldOptions('LLMAccess', 'spec.llmModels[].id', 'default');
+renderPicker(models.map(({ value, label }) => ({ id: value, name: label })));
+```
+
+- **Field paths** are dot-separated property names rooted at the object, with `[]` after a property
+  whose value is an array, to step into its items: `spec.llmModels[].id` is the `id` of each item of
+  `spec.llmModels`. A path names a schema field only; it carries no URL or query. An empty path or
+  an empty segment (`spec..id`) fails with `invalid-payload`.
+- **The source** is the field source the CRD author declared on that field (a `kdp:options` block).
+  The Dashboard resolves it in the current workspace and namespace and fetches the options with the
+  user's credentials, so the source kinds (here `LLMModel` from the service catalog) need not be
+  among `context.kinds`. A field without a declared source fails with `not-found`.
+- **It is a read**, so it needs no `access` declaration and no consent.
 
 ## Protocol versioning
 

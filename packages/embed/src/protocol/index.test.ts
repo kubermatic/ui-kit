@@ -22,6 +22,7 @@ import {
   OPERATIONS,
   PROTOCOL_VERSION,
   type EmbedContext,
+  type FieldOption,
   type KdpObject,
   type OperationParams,
   type OperationResult,
@@ -34,6 +35,7 @@ describe('@kubermatic/embed/protocol', () => {
   it('exports the version, message and error API', () => {
     expect(isCompatible(PROTOCOL_VERSION, '1.9')).toBe(true);
     expect(OPERATIONS).toContain('getRelated');
+    expect(OPERATIONS).toContain('getFieldOptions');
     expect(EMBED_ERROR_CODES).toContain('not-consented');
     expect(KdpEmbedError.fromFailure({ code: 'timeout' }).kind).toBe('transport');
     expect(
@@ -45,6 +47,13 @@ describe('@kubermatic/embed/protocol', () => {
     expectTypeOf<OperationResult<'can'>>().toEqualTypeOf<boolean>();
     expectTypeOf<OperationResult<'getRelated'>>().toEqualTypeOf<KdpObject[]>();
     expectTypeOf<OperationResult<'deleteObject'>>().toEqualTypeOf<null>();
+    expectTypeOf<FieldOption>().toEqualTypeOf<{ value: string; label: string }>();
+    expectTypeOf<OperationResult<'getFieldOptions'>>().toEqualTypeOf<FieldOption[]>();
+    expectTypeOf<OperationParams<'getFieldOptions'>>().toEqualTypeOf<{
+      kind: string;
+      field: string;
+      namespace?: string;
+    }>();
     expectTypeOf<OperationParams<'can'>>().toEqualTypeOf<{
       verb: 'get' | 'list' | 'create' | 'patch' | 'delete';
       kind: string;

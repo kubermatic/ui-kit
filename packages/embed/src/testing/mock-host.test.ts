@@ -153,6 +153,25 @@ describe('createMockHost', () => {
     await expect(client.getRelated('LLMAccess', 'a', 'other')).resolves.toEqual([]);
   });
 
+  it('returns seeded field options as copies, or an empty list', async () => {
+    const seed = [
+      { value: 'llama', label: 'Llama' },
+      { value: 'mistral', label: 'Mistral' },
+    ];
+    const { client } = start({ fieldOptions: { LLMAccess: { 'spec.llmModels[].id': seed } } });
+
+    const options = await client.getFieldOptions('LLMAccess', 'spec.llmModels[].id');
+    expect(options).toEqual(seed);
+    options[0]!.label = 'changed';
+    options.pop();
+    await expect(
+      client.getFieldOptions('LLMAccess', 'spec.llmModels[].id', 'default'),
+    ).resolves.toEqual(seed);
+    expect(seed[0]!.label).toBe('Llama');
+    await expect(client.getFieldOptions('LLMAccess', 'spec.other')).resolves.toEqual([]);
+    await expect(client.getFieldOptions('Other', 'spec.llmModels[].id')).resolves.toEqual([]);
+  });
+
   it('answers can with true by default', async () => {
     const { client } = start();
     await expect(client.can('delete', 'LLMAccess')).resolves.toBe(true);
@@ -171,13 +190,19 @@ describe('createMockHost', () => {
   });
 
   it('forces a failure per operation', async () => {
-    const { client } = start({ fail: { createObject: 'forbidden', can: 'something-new' } });
+    const { client } = start({
+      fail: { createObject: 'forbidden', getFieldOptions: 'upstream', can: 'something-new' },
+      fieldOptions: { LLMAccess: { 'spec.llmModels[].id': [{ value: 'llama', label: 'Llama' }] } },
+    });
 
     const error = await rejection(client.createObject('LLMAccess', a));
     expect(error.code).toBe('forbidden');
     expect(error.kind).toBe('platform');
     expect(error.message).not.toBe('');
     expect((await rejection(client.can('get', 'LLMAccess'))).code).toBe('something-new');
+    expect((await rejection(client.getFieldOptions('LLMAccess', 'spec.llmModels[].id'))).code).toBe(
+      'upstream',
+    );
     await expect(client.listObjects('LLMAccess')).resolves.toEqual([]);
   });
 

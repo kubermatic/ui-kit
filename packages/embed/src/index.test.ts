@@ -24,6 +24,7 @@ import type {
   ConnectOutcome,
   EmbedContext,
   EmbedErrorKind,
+  FieldOption,
   KdpClient,
   KdpObject,
 } from '@kubermatic/embed';
@@ -66,6 +67,9 @@ describe('@kubermatic/embed', () => {
     >().toEqualTypeOf<KdpClient>();
     expectTypeOf<KdpClient['context']>().toEqualTypeOf<EmbedContext>();
     expectTypeOf<ReturnType<KdpClient['getRelated']>>().toEqualTypeOf<Promise<KdpObject[]>>();
+    expectTypeOf<ReturnType<KdpClient['getFieldOptions']>>().toEqualTypeOf<
+      Promise<FieldOption[]>
+    >();
     expectTypeOf(embed.errorKind).returns.toEqualTypeOf<EmbedErrorKind>();
   });
 

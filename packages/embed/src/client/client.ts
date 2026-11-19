@@ -13,7 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import type { EmbedContext, EmbedVerb, KdpObject, Theme } from '../protocol/messages.js';
+import type {
+  EmbedContext,
+  EmbedVerb,
+  FieldOption,
+  KdpObject,
+  Theme,
+} from '../protocol/messages.js';
 import { createChannel } from './channel.js';
 
 export const DEFAULT_REQUEST_TIMEOUT_MS = 30_000;
@@ -63,6 +69,11 @@ export interface KdpClient {
     identifier: string,
     namespace?: string,
   ): Promise<T[]>;
+  /**
+   * The choices the CRD declares for `field` of `kind`, e.g. `spec.llmModels[].id`, as the
+   * Dashboard's forms show them; may be empty.
+   */
+  getFieldOptions(kind: string, field: string, namespace?: string): Promise<FieldOption[]>;
   /** Asks the Dashboard every time; answers are not cached. */
   can(verb: EmbedVerb, kind: string, namespace?: string): Promise<boolean>;
   /** Registers a listener and returns a function that removes it. */
@@ -153,6 +164,9 @@ export function createClient(options: ClientOptions): KdpClient {
         'getRelated',
         withNamespace({ kind, name, identifier }, namespace),
       ) as Promise<T[]>;
+    },
+    getFieldOptions(kind, field, namespace) {
+      return channel.request('getFieldOptions', withNamespace({ kind, field }, namespace));
     },
     can(verb, kind, namespace) {
       return channel.request('can', withNamespace({ verb, kind }, namespace));
