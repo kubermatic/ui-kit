@@ -180,7 +180,8 @@ const secrets = await client.getRelated('LLMAccess', 'team-a', 'connection-detai
   `patchObject`, `deleteObject` and `getRelated` on a namespaced kind need a namespace and fail with
   `invalid` without one; a namespace for a cluster-scoped kind fails with `invalid` too. For
   `createObject` the namespace can come from the argument or from `metadata.namespace`, but not two
-  different ones.
+  different ones. A namespace must be a DNS-1123 label and a name must not be `.` or `..`;
+  otherwise the call fails with `invalid-payload`.
 - **Patches** are JSON merge patches ([RFC 7386](https://www.rfc-editor.org/rfc/rfc7386)): objects
   merge, `null` removes a field, anything else replaces it.
 - **`getRelated`** takes the _source_ object (`kind`, `name`, `namespace`) and the related-resource
@@ -205,12 +206,12 @@ const secrets = await client.getRelated('LLMAccess', 'team-a', 'connection-detai
 Every rejection is a `KdpEmbedError` with a `code`, a human-readable `message`, optional `details`
 and a `kind` derived from the code. `isBoundary` is shorthand for `kind === 'boundary'`.
 
-| Kind        | Codes                                                       | Meaning                                                                                                                            |
-| ----------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `boundary`  | `out-of-scope`, `not-declared`, `not-consented`             | The Dashboard refused: the kind is not one of the service's, the extension did not declare the verb, or the user has not consented |
-| `platform`  | `forbidden`, `not-found`, `conflict`, `invalid`, `upstream` | The platform rejected the request made with the user's credentials, or failed handling it                                          |
-| `transport` | `timeout`, `disconnected`, `protocol`, `invalid-payload`    | The channel failed: no response in time, connection closed, malformed message, or a value that cannot be sent (e.g. a function)    |
-| `unknown`   | anything else                                               | A code this version does not know, e.g. one added by a newer Dashboard. `message` is still set                                     |
+| Kind        | Codes                                                       | Meaning                                                                                                                                                                                          |
+| ----------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `boundary`  | `out-of-scope`, `not-declared`, `not-consented`             | The Dashboard refused: the kind is not one of the service's, the extension did not declare the verb, or the user has not consented                                                               |
+| `platform`  | `forbidden`, `not-found`, `conflict`, `invalid`, `upstream` | The platform rejected the request made with the user's credentials, or failed handling it                                                                                                        |
+| `transport` | `timeout`, `disconnected`, `protocol`, `invalid-payload`    | The channel failed: no response in time, connection closed, malformed message, a parameter the Dashboard rejects by shape (e.g. an empty name), or a value that cannot be sent (e.g. a function) |
+| `unknown`   | anything else                                               | A code this version does not know, e.g. one added by a newer Dashboard. `message` is still set                                                                                                   |
 
 ```ts
 import { isKdpEmbedError } from '@kubermatic/embed';
@@ -236,20 +237,21 @@ namespaces as the Dashboard does: an empty name, a namespace that is not a DNS-1
 non-object patch, an unknown verb or a malformed field path fails with `invalid-payload`; a kind
 outside `context.kinds` fails with `out-of-scope`; and a single-object call on a namespaced kind
 without a namespace fails with `invalid`. Created objects get `kind`, and an `apiVersion` from a
-seeded object of the kind, else the one sent if its group matches, else `<group>/v1`. It applies no access rules: a call
-fails otherwise only when `fail` says so, or with `not-found` / `conflict` for a missing or existing
-object, or for `getRelated` on a source object not seeded in `objects` and `getFieldOptions` on a
-field without seeded options, both of which fail with `not-found` as on the Dashboard.
+seeded object of the kind, else the one sent if its group matches, else `<group>/v1`. It applies no
+access rules: a call fails otherwise only when `fail` says so, or with `not-found` / `conflict` for
+a missing or existing object, or for `getRelated` on a source object not seeded in `objects` and
+`getFieldOptions` on a field without seeded options, both of which fail with `not-found` as on the
+Dashboard.
 
-| Option          | Meaning                                                                                                                        |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `context`       | Merged over a default context (workspace `demo`, service `demo`, theme `light`). Without `kinds`, every seeded kind is offered |
-| `clusterScoped` | Kinds that are cluster-scoped; every other kind is namespaced                                                                  |
-| `objects`       | The objects each kind starts with, e.g. `{ LLMAccess: [...] }`. Copied; an omitted namespace matches any                       |
-| `related`       | What `getRelated` returns, keyed by `` `${kind}/${name}/${identifier}` ``; other keys of a seeded source return `[]`           |
-| `fieldOptions`  | What `getFieldOptions` returns per kind and field, e.g. `{ LLMAccess: { 'spec.llmModels[].id': [...] } }`                      |
-| `can`           | The answer to every `can`, or a function `({ verb, kind, namespace }) => boolean`. Defaults to `true`                          |
-| `fail`          | Makes an operation always fail with a code, e.g. `{ deleteObject: 'not-consented' }`                                           |
+| Option          | Meaning                                                                                                                                                                      |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `context`       | Merged over a default context (workspace `demo`, service `demo`, theme `light`). Without `kinds`, every seeded kind is offered                                               |
+| `clusterScoped` | Kinds that are cluster-scoped; every other kind is namespaced                                                                                                                |
+| `objects`       | The objects each kind starts with, e.g. `{ LLMAccess: [...] }`. Copied; an omitted namespace matches any                                                                     |
+| `related`       | What `getRelated` returns, keyed by `` `${kind}/${name}/${identifier}` ``; other keys of a seeded source return `[]`                                                         |
+| `fieldOptions`  | What `getFieldOptions` returns per kind and field, e.g. `{ LLMAccess: { 'spec.llmModels[].id': [...] } }`                                                                    |
+| `can`           | The answer to every `can`, or a function `({ verb, kind, namespace }) => boolean`. Defaults to `true`; a kind outside `context.kinds` is always `false`, as on the Dashboard |
+| `fail`          | Makes an operation always fail with a code, e.g. `{ deleteObject: 'not-consented' }`                                                                                         |
 
 The host exposes `client`, `objects` (a copy of the current state per kind, reflecting the client's
 changes), `notifyTheme(theme)` and `close()`, which disconnects the client as the Dashboard does.
@@ -341,10 +343,11 @@ spec:
 ### Consent
 
 Before an extension may mutate anything, the Dashboard shows the user what it declared — service,
-origin, kinds and verbs — and asks for consent. Until the user allows it, every mutation fails with
-`not-consented` and `can()` answers `false`; the page still renders and reads, so treat it as
-read-only. Widening `access` asks the user again. Consent never grants more than the user's own
-permissions: requests still go out with their credentials.
+origin, kinds and verbs — and asks for consent per verb. The user may allow only some of them. A
+mutation the user has not allowed fails with `not-consented`, and `can()` answers `false` for it;
+the page still renders and reads, so treat what is not allowed as read-only. Any change to `access`,
+or serving the page from another origin, asks again, with the earlier choices pre-selected. Consent
+never grants more than the user's own permissions: requests still go out with their credentials.
 
 ## Framing headers
 
@@ -414,7 +417,8 @@ The page announces itself to the parent window with target `*`, so the announcem
 the type, the protocol version and an `instanceId`. It is repeated every 250 ms until answered.
 `connect()` picks a new random `instanceId` per call and sends it with every repeat; the Dashboard
 ignores repeats of the instance it is already connected to and replaces the channel only for a new
-one, e.g. after a reload.
+one, e.g. after a reload. The Dashboard's accept or refuse carries that `instanceId`, and the page
+ignores replies for another one, so two concurrent `connect()` calls never share a channel.
 
 `@kubermatic/embed/protocol` exports the wire contract for the Dashboard's side of the channel.
 Extension authors do not need it.
