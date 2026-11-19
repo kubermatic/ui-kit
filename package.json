@@ -24,7 +24,7 @@
     "version-packages": "GITHUB_TOKEN=${GITHUB_TOKEN:-$(gh auth token 2>/dev/null)} changeset version",
     "release": "changeset publish",
     "check:dist": "npm run build && npm run check:package",
-    "check:package": "publint packages/ui-kit && publint packages/eslint-config && attw --pack packages/ui-kit --ignore-rules no-resolution cjs-resolves-to-esm"
+    "check:package": "publint packages/ui-kit && publint packages/eslint-config && publint packages/embed && attw --pack packages/ui-kit --ignore-rules no-resolution cjs-resolves-to-esm && attw --pack packages/embed --ignore-rules no-resolution cjs-resolves-to-esm"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "0.18.5",
