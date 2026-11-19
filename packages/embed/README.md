@@ -38,6 +38,9 @@ switch (outcome.status) {
   case 'version-mismatch':
     showMessage(`This page does not support Dashboard protocol ${outcome.hostProtocolVersion}.`);
     break;
+  case 'refused':
+    showMessage(`The Dashboard refused this page: ${outcome.reason}.`);
+    break;
   case 'timed-out':
     showMessage('Could not connect to the Dashboard.');
     break;
@@ -64,7 +67,7 @@ export function App() {
 }
 
 function Accesses() {
-  const { state, client, context, disconnected } = useKdp();
+  const { state, client, context } = useKdp();
   const theme = useKdpTheme();
   const [accesses, setAccesses] = useState<KdpObject[]>([]);
 
@@ -73,12 +76,12 @@ function Accesses() {
   }, [client]);
 
   if (state === 'connecting') return <p>Connecting…</p>;
-  if (state !== 'connected') return <p>Open this page from the KDP Dashboard ({state}).</p>;
+  if (!client) return <p>Open this page from the KDP Dashboard ({state}).</p>;
 
   return (
     <main data-theme={theme}>
-      {disconnected && <p role="alert">The Dashboard closed the connection.</p>}
-      <h1>{context?.service.name}</h1>
+      {state === 'disconnected' && <p role="alert">The Dashboard closed the connection.</p>}
+      <h1>{context.service.name}</h1>
       <ul>
         {accesses.map((access) => (
           <li key={access.metadata.name}>{access.metadata.name}</li>
@@ -89,32 +92,36 @@ function Accesses() {
 }
 ```
 
-| `useKdp()` field | Meaning                                                                                                                                    |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `state`          | `connecting`, then one of the `connect()` outcome statuses                                                                                 |
-| `client`         | The `KdpClient`, set while `state` is `connected`                                                                                          |
-| `context`        | `client.context`, following theme changes                                                                                                  |
-| `outcome`        | The handshake's result; unset while connecting and for an injected `client`                                                                |
-| `disconnected`   | `true` once the connection ended. `state` stays `connected` so `client` and `context` stay readable; calls then reject with `disconnected` |
+| `useKdp()` field | Meaning                                                                                                                      |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `state`          | `connecting`, then one of the `connect()` outcome statuses. `connected` becomes `disconnected` once the connection ends      |
+| `client`         | The `KdpClient`, set while `state` is `connected` or `disconnected`. After a disconnect its calls reject with `disconnected` |
+| `context`        | `client.context`, following theme changes; set whenever `client` is                                                          |
+| `outcome`        | The handshake's result; unset while connecting and for an injected `client`                                                  |
 
-`useKdp()` throws outside a `KdpProvider`. `options` is read once, on mount.
+`useKdp()` throws outside a `KdpProvider`. `options` is required unless you pass a `client`, and
+is read once, on mount. Unmounting the provider aborts a pending handshake.
 
-## `connect(options?)`
+## `connect(options)`
 
-Announces the page to the parent window and waits for the Dashboard to accept it. It never rejects;
-it resolves with one of four outcomes.
+Announces the page to the parent window and waits for the Dashboard to accept it. It resolves with
+one of five outcomes. It rejects when `signal` aborts, and with a `TypeError` when
+`expectedOrigins` is neither `'*'` nor a non-empty list of origins such as `https://kdp.example.com`
+(no path, no trailing slash).
 
-| Option               | Default | Meaning                                                                                                                                |
-| -------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `expectedOrigins`    | any     | Origins the Dashboard may answer from, e.g. `['https://kdp.example.com']`. Answers are always required to come from the parent window. |
-| `handshakeTimeoutMs` | 10 000  | How long to wait for the Dashboard to answer                                                                                           |
-| `requestTimeoutMs`   | 30 000  | How long each request waits for its response before rejecting with `timeout`                                                           |
+| Option               | Default  | Meaning                                                                                                                                                                                                                      |
+| -------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `expectedOrigins`    | required | Origins the Dashboard may answer from, e.g. `['https://kdp.example.com']`. `'*'` accepts any origin: any site that can frame your page can then pose as the Dashboard, and your `frame-ancestors` CSP is the only protection |
+| `handshakeTimeoutMs` | 10 000   | How long to wait for the Dashboard to answer                                                                                                                                                                                 |
+| `requestTimeoutMs`   | 30 000   | How long each request waits for its response before rejecting with `timeout`                                                                                                                                                 |
+| `signal`             | —        | An `AbortSignal` that stops the handshake; `connect()` then rejects with the signal's reason                                                                                                                                 |
 
 | Outcome            | Fields                          | When                                                                                                                                                                                 |
 | ------------------ | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `connected`        | `client`, `hostProtocolVersion` | The Dashboard accepted the page                                                                                                                                                      |
+| `connected`        | `client`                        | The Dashboard accepted the page                                                                                                                                                      |
 | `not-embedded`     | —                               | The page is not in a frame, e.g. it was opened directly                                                                                                                              |
 | `version-mismatch` | `hostProtocolVersion`           | The Dashboard speaks an incompatible protocol version                                                                                                                                |
+| `refused`          | `reason`, `hostProtocolVersion` | The Dashboard refused the page for a reason this version does not know                                                                                                               |
 | `timed-out`        | —                               | Nothing accepted the page in time. The most common cause is a framing header on your page — see [Framing headers](#framing-headers) — or a Dashboard origin not in `expectedOrigins` |
 
 ## Client
@@ -224,17 +231,25 @@ The code lists are exported as `BOUNDARY_ERROR_CODES`, `PLATFORM_ERROR_CODES`,
 ## Testing
 
 `createMockHost()` from `@kubermatic/embed/testing` starts an in-memory Dashboard and returns a
-client already connected to it over a real `MessageChannel`. It applies no access rules: a call
-fails only when `fail` says so, or with `not-found` / `conflict` for a missing or existing object.
+client already connected to it over a real `MessageChannel`. It checks payload shape, scope and
+namespaces as the Dashboard does: an empty name, a namespace that is not a DNS-1123 label, a
+non-object patch, an unknown verb or a malformed field path fails with `invalid-payload`; a kind
+outside `context.kinds` fails with `out-of-scope`; and a single-object call on a namespaced kind
+without a namespace fails with `invalid`. Created objects get `kind`, and an `apiVersion` from a
+seeded object of the kind, else the one sent if its group matches, else `<group>/v1`. It applies no access rules: a call
+fails otherwise only when `fail` says so, or with `not-found` / `conflict` for a missing or existing
+object, or for `getRelated` on a source object not seeded in `objects` and `getFieldOptions` on a
+field without seeded options, both of which fail with `not-found` as on the Dashboard.
 
-| Option         | Meaning                                                                                                                       |
-| -------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `context`      | Merged over a default context (workspace `demo`, service `demo`, theme `light`)                                               |
-| `objects`      | The objects each kind starts with, e.g. `{ LLMAccess: [...] }`. Copied; an omitted namespace matches any                      |
-| `related`      | What `getRelated` returns, keyed by `` `${kind}/${name}/${identifier}` ``; other keys return `[]`                             |
-| `fieldOptions` | What `getFieldOptions` returns per kind and field, e.g. `{ LLMAccess: { 'spec.llmModels[].id': [...] } }`; others return `[]` |
-| `can`          | The answer to every `can`, or a function `({ verb, kind, namespace }) => boolean`. Defaults to `true`                         |
-| `fail`         | Makes an operation always fail with a code, e.g. `{ deleteObject: 'not-consented' }`                                          |
+| Option          | Meaning                                                                                                                        |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `context`       | Merged over a default context (workspace `demo`, service `demo`, theme `light`). Without `kinds`, every seeded kind is offered |
+| `clusterScoped` | Kinds that are cluster-scoped; every other kind is namespaced                                                                  |
+| `objects`       | The objects each kind starts with, e.g. `{ LLMAccess: [...] }`. Copied; an omitted namespace matches any                       |
+| `related`       | What `getRelated` returns, keyed by `` `${kind}/${name}/${identifier}` ``; other keys of a seeded source return `[]`           |
+| `fieldOptions`  | What `getFieldOptions` returns per kind and field, e.g. `{ LLMAccess: { 'spec.llmModels[].id': [...] } }`                      |
+| `can`           | The answer to every `can`, or a function `({ verb, kind, namespace }) => boolean`. Defaults to `true`                          |
+| `fail`          | Makes an operation always fail with a code, e.g. `{ deleteObject: 'not-consented' }`                                           |
 
 The host exposes `client`, `objects` (a copy of the current state per kind, reflecting the client's
 changes), `notifyTheme(theme)` and `close()`, which disconnects the client as the Dashboard does.
@@ -311,14 +326,17 @@ spec:
 - **`access`** declares only the mutating verbs `create`, `patch` and `delete`. Reading
   (`listObjects`, `getObject`, `getRelated`, `getFieldOptions`) every kind of the service is
   implicit. A mutation that is not declared fails with `not-declared` without reaching the platform.
+  `getFieldOptions` reads only within those kinds or the service catalog (see
+  [Field options](#field-options)).
   Omit `access` for a read-only extension.
 - **`url`** must be absolute and on a different origin than the Dashboard; use `https`. A URL on the
   Dashboard's own origin is not rendered.
 - **Placeholders** in the URL are replaced by the Dashboard: `{{workspace}}` and `{{connector}}` (the
   ID of the OIDC connector the user signed in with), and for a `ServiceObjectContextMenu` also
-  `{{objectName}}`, `{{objectNamespace}}` and `{{objectKind}}`. In a `ServiceInstancePageButton` the
-  object placeholders are replaced by empty strings. The same values are in `client.context`, so you
-  do not need them to connect.
+  `{{objectName}}`, `{{objectNamespace}}` and `{{objectKind}}`. A template that uses a placeholder
+  without a value — any object placeholder in a `ServiceInstancePageButton`, `{{objectNamespace}}`
+  for a cluster-scoped object, or `{{connector}}` when the session has none — is not rendered. The
+  same values are in `client.context`, so you do not need them to connect.
 
 ### Consent
 
@@ -379,8 +397,11 @@ renderPicker(models.map(({ value, label }) => ({ id: value, name: label })));
   an empty segment (`spec..id`) fails with `invalid-payload`.
 - **The source** is the field source the CRD author declared on that field (a `kdp:options` block).
   The Dashboard resolves it in the current workspace and namespace and fetches the options with the
-  user's credentials, so the source kinds (here `LLMModel` from the service catalog) need not be
-  among `context.kinds`. A field without a declared source fails with `not-found`.
+  user's credentials. A `vwcatalog` source reads the service catalog, so its kinds (here `LLMModel`)
+  need not be among `context.kinds`. A `local` source must list one of the service's kinds, since
+  your page receives whatever its templates project; one that lists anything else, such as Secrets,
+  fails with `out-of-scope` (the Dashboard's own forms still use it). A field without a declared
+  source fails with `not-found`.
 - **It is a read**, so it needs no `access` declaration and no consent.
 
 ## Protocol versioning

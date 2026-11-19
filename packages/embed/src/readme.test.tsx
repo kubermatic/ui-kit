@@ -15,9 +15,12 @@
  */
 
 /*
- * The code examples from README.md, kept close to verbatim so that they typecheck and run. When an
- * example in the README changes, change it here too.
+ * The code examples from README.md, so that they typecheck and run. The last test fails when a
+ * TypeScript example in the README is not found here verbatim, up to whitespace and imports.
  */
+
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 import { render, screen } from '@testing-library/react';
 import { useEffect, useState } from 'react';
@@ -92,6 +95,9 @@ async function quickStart() {
     case 'version-mismatch':
       showMessage(`This page does not support Dashboard protocol ${outcome.hostProtocolVersion}.`);
       break;
+    case 'refused':
+      showMessage(`The Dashboard refused this page: ${outcome.reason}.`);
+      break;
     case 'timed-out':
       showMessage('Could not connect to the Dashboard.');
       break;
@@ -99,7 +105,7 @@ async function quickStart() {
 }
 
 // README: React
-function App() {
+export function App() {
   return (
     <KdpProvider options={{ expectedOrigins: ['https://kdp.example.com'] }}>
       <Accesses />
@@ -108,7 +114,7 @@ function App() {
 }
 
 function Accesses() {
-  const { state, client, context, disconnected } = useKdp();
+  const { state, client, context } = useKdp();
   const theme = useKdpTheme();
   const [accesses, setAccesses] = useState<KdpObject[]>([]);
 
@@ -117,12 +123,12 @@ function Accesses() {
   }, [client]);
 
   if (state === 'connecting') return <p>Connecting…</p>;
-  if (state !== 'connected') return <p>Open this page from the KDP Dashboard ({state}).</p>;
+  if (!client) return <p>Open this page from the KDP Dashboard ({state}).</p>;
 
   return (
     <main data-theme={theme}>
-      {disconnected && <p role="alert">The Dashboard closed the connection.</p>}
-      <h1>{context?.service.name}</h1>
+      {state === 'disconnected' && <p role="alert">The Dashboard closed the connection.</p>}
+      <h1>{context.service.name}</h1>
       <ul>
         {accesses.map((access) => (
           <li key={access.metadata.name}>{access.metadata.name}</li>
@@ -173,11 +179,7 @@ async function deleteWithErrors(client: KdpClient) {
 describe('README examples', () => {
   it('quick start handles a connection', async () => {
     const host = mockHost({ objects: { LLMAccess: [teamA] } });
-    connectMock.mockResolvedValue({
-      status: 'connected',
-      client: host.client,
-      hostProtocolVersion: '1.0',
-    });
+    connectMock.mockResolvedValue({ status: 'connected', client: host.client });
 
     await quickStart();
     expect(connectMock).toHaveBeenCalledWith({ expectedOrigins: ['https://kdp.example.com'] });
@@ -193,6 +195,10 @@ describe('README examples', () => {
     [
       { status: 'version-mismatch', hostProtocolVersion: '2.0' },
       'This page does not support Dashboard protocol 2.0.',
+    ],
+    [
+      { status: 'refused', reason: 'maintenance', hostProtocolVersion: '1.0' },
+      'The Dashboard refused this page: maintenance.',
     ],
     [{ status: 'timed-out' }, 'Could not connect to the Dashboard.'],
   ])('quick start handles %o', async (outcome, message) => {
@@ -281,4 +287,29 @@ describe('README examples', () => {
     expect(await screen.findByText('team-a')).toBeInTheDocument();
     host.close();
   });
+});
+
+/** Drops imports, whitespace and trailing commas, so that line wrapping does not count. */
+function normalize(code: string): string {
+  return code
+    .replace(/^import[\s\S]*?from '[^']+';$/gm, '')
+    .replace(/\s+/g, '')
+    .replace(/,([}\])])/g, '$1');
+}
+
+describe('README', () => {
+  const readme = readFileSync(join(import.meta.dirname, '../README.md'), 'utf8');
+  const tested = normalize(readFileSync(join(import.meta.dirname, 'readme.test.tsx'), 'utf8'));
+  const examples = [...readme.matchAll(/```tsx?\n([\s\S]*?)```/g)].map(([, code]) => code!);
+
+  it('has TypeScript examples', () => {
+    expect(examples.length).toBeGreaterThan(5);
+  });
+
+  it.each(examples.map((code, index) => [index + 1, code] as const))(
+    'example %i is tested in this file',
+    (_, code) => {
+      expect(tested).toContain(normalize(code));
+    },
+  );
 });

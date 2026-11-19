@@ -13,29 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { createContext, useCallback, useContext, useSyncExternalStore } from 'react';
+import { createContext, useContext } from 'react';
 
 import type { KdpClient } from '../client/client.js';
 import type { ConnectOutcome } from '../client/connect.js';
 import type { EmbedContext, Theme } from '../protocol/messages.js';
 
-export type KdpState = 'connecting' | ConnectOutcome['status'];
+type Failed<O extends ConnectOutcome> = O extends { status: 'connected' }
+  ? never
+  : { state: O['status']; client?: undefined; context?: undefined; outcome: O };
 
-export interface KdpConnection {
-  state: KdpState;
-  /** Set while `state` is `connected`. */
-  client?: KdpClient;
-  /** The client's context; follows theme changes. Set while `state` is `connected`. */
-  context?: EmbedContext;
-  /** The handshake's result. Unset while connecting and for an injected client. */
-  outcome?: ConnectOutcome;
-  /**
-   * True once the Dashboard closed the connection or the client was closed. `state` stays
-   * `connected` so that the client and context remain available; their calls reject with
-   * `disconnected`.
-   */
-  disconnected: boolean;
-}
+export type KdpConnection =
+  | { state: 'connecting'; client?: undefined; context?: undefined; outcome?: undefined }
+  | {
+      /**
+       * `disconnected` once the Dashboard closed the connection or the client was closed. `client`
+       * and `context` stay readable then; their calls reject with `disconnected`.
+       */
+      state: 'connected' | 'disconnected';
+      client: KdpClient;
+      /** The client's context; follows theme changes. */
+      context: EmbedContext;
+      /** The handshake's result; unset for an injected client. */
+      outcome?: Extract<ConnectOutcome, { status: 'connected' }>;
+    }
+  | Failed<ConnectOutcome>;
+
+export type KdpState = KdpConnection['state'];
 
 export const KdpContext = createContext<KdpConnection | undefined>(undefined);
 
@@ -48,11 +52,5 @@ export function useKdp(): KdpConnection {
 
 /** The Dashboard's current theme, rerendering on changes. `undefined` until connected. */
 export function useKdpTheme(): Theme | undefined {
-  const { client } = useKdp();
-  const subscribe = useCallback(
-    (onChange: () => void) => client?.on('theme', onChange) ?? (() => {}),
-    [client],
-  );
-  const getTheme = () => client?.context.theme;
-  return useSyncExternalStore(subscribe, getTheme, getTheme);
+  return useKdp().context?.theme;
 }

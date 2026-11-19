@@ -170,7 +170,7 @@ describe('isAnnounceMessage', () => {
 });
 
 describe('isAcceptMessage', () => {
-  const accept: AcceptMessage = { type: ACCEPT, protocolVersion: '1.0', context };
+  const accept: AcceptMessage = { type: ACCEPT, protocolVersion: '1.0', instanceId: 'a1', context };
 
   it('accepts a valid accept message', () => {
     expect(isAcceptMessage(accept)).toBe(true);
@@ -186,17 +186,32 @@ describe('isAcceptMessage', () => {
     expect(isAcceptMessage({ ...accept, context: { ...context, theme: 'blue' } })).toBe(false);
     expect(isAcceptMessage({ ...accept, type: REFUSE })).toBe(false);
   });
+
+  it.each([
+    ['missing', undefined],
+    ['empty', ''],
+    ['not a string', 1],
+  ])('rejects an accept whose instance ID is %s', (_, instanceId) => {
+    expect(isAcceptMessage({ ...accept, instanceId })).toBe(false);
+  });
 });
 
 describe('isRefuseMessage', () => {
   it('accepts a valid refusal', () => {
     expect(
-      isRefuseMessage({ type: REFUSE, protocolVersion: '1.0', reason: 'version-mismatch' }),
+      isRefuseMessage({
+        type: REFUSE,
+        protocolVersion: '1.0',
+        instanceId: 'a1',
+        reason: 'version-mismatch',
+      }),
     ).toBe(true);
   });
 
   it('accepts a reason added by a later host', () => {
-    expect(isRefuseMessage({ type: REFUSE, protocolVersion: '1.4', reason: 'busy' })).toBe(true);
+    expect(
+      isRefuseMessage({ type: REFUSE, protocolVersion: '1.4', instanceId: 'a1', reason: 'busy' }),
+    ).toBe(true);
   });
 
   it.each(foreign)('rejects foreign %j', (value) => {
@@ -204,10 +219,13 @@ describe('isRefuseMessage', () => {
   });
 
   it('rejects partial and wrong-typed refusals', () => {
-    expect(isRefuseMessage({ type: REFUSE, protocolVersion: '1.0' })).toBe(false);
-    expect(isRefuseMessage({ type: REFUSE, reason: 'version-mismatch' })).toBe(false);
-    expect(isRefuseMessage({ type: REFUSE, protocolVersion: '1.0', reason: '' })).toBe(false);
-    expect(isRefuseMessage({ type: REFUSE, protocolVersion: '1.0', reason: 3 })).toBe(false);
+    const refuse = { type: REFUSE, protocolVersion: '1.0', instanceId: 'a1', reason: 'busy' };
+    expect(isRefuseMessage({ ...refuse, reason: undefined })).toBe(false);
+    expect(isRefuseMessage({ ...refuse, protocolVersion: undefined })).toBe(false);
+    expect(isRefuseMessage({ ...refuse, instanceId: undefined })).toBe(false);
+    expect(isRefuseMessage({ ...refuse, instanceId: '' })).toBe(false);
+    expect(isRefuseMessage({ ...refuse, reason: '' })).toBe(false);
+    expect(isRefuseMessage({ ...refuse, reason: 3 })).toBe(false);
   });
 });
 
@@ -302,8 +320,8 @@ describe('isNotifyMessage', () => {
 describe('messages carry data only', () => {
   it('survive structured cloning unchanged', () => {
     const messages = [
-      { type: ANNOUNCE, protocolVersion: '1.0' },
-      { type: ACCEPT, protocolVersion: '1.0', context },
+      { type: ANNOUNCE, protocolVersion: '1.0', instanceId: 'a1' },
+      { type: ACCEPT, protocolVersion: '1.0', instanceId: 'a1', context },
       { type: REQUEST, id: 1, operation: 'can', params: { verb: 'get', kind: 'Database' } },
       { type: RESPONSE, id: 1, ok: true, result: true },
       { type: NOTIFY, event: 'closing' },

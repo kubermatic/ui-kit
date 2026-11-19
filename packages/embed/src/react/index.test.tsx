@@ -26,8 +26,13 @@ describe('@kubermatic/embed/react', () => {
   });
 
   it('exports the binding types', () => {
-    expectTypeOf<KdpState>().toEqualTypeOf<'connecting' | ConnectOutcome['status']>();
+    expectTypeOf<KdpState>().toEqualTypeOf<
+      'connecting' | 'disconnected' | ConnectOutcome['status']
+    >();
     expectTypeOf<KdpConnection['client']>().toEqualTypeOf<KdpClient | undefined>();
+    expectTypeOf<Extract<KdpConnection, { state: 'version-mismatch' }>['outcome']>().toEqualTypeOf<
+      Extract<ConnectOutcome, { status: 'version-mismatch' }>
+    >();
     expectTypeOf<KdpProviderProps['options']>().toEqualTypeOf<ConnectOptions | undefined>();
     expectTypeOf(react.useKdpTheme).returns.toEqualTypeOf<Theme | undefined>();
   });

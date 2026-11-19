@@ -13,34 +13,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { type ReactNode, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 
 import type { KdpClient } from '../client/client.js';
 import { type ConnectOptions, type ConnectOutcome, connect } from '../client/connect.js';
 import { type KdpConnection, KdpContext } from './hooks.js';
 
-export interface KdpProviderProps {
-  children?: ReactNode;
-  /**
-   * A client that is already connected, such as `createMockHost().client`. The provider then
-   * skips the handshake and leaves closing the client to its owner.
-   */
-  client?: KdpClient;
-  /** Passed to `connect()`. Read once, when the provider mounts. */
-  options?: ConnectOptions;
-}
-
-function subscribeTo(client: KdpClient | undefined) {
-  return (onChange: () => void) => {
-    if (!client) return () => {};
-    const offTheme = client.on('theme', onChange);
-    const offDisconnected = client.on('disconnected', onChange);
-    return () => {
-      offTheme();
-      offDisconnected();
-    };
-  };
-}
+export type KdpProviderProps = { children?: ReactNode } & (
+  | {
+      /**
+       * A client that is already connected, such as `createMockHost().client`. The provider then
+       * skips the handshake and leaves closing the client to its owner.
+       */
+      client: KdpClient;
+      options?: undefined;
+    }
+  | {
+      client?: undefined;
+      /** Passed to `connect()`. Read once, when the provider mounts. */
+      options: ConnectOptions;
+    }
+);
 
 /** Connects to the Dashboard on mount and closes the connection on unmount. */
 export function KdpProvider({ children, client: injected, options }: KdpProviderProps) {
@@ -49,38 +50,59 @@ export function KdpProvider({ children, client: injected, options }: KdpProvider
 
   useEffect(() => {
     if (injected) return;
-    let cancelled = false;
+    const controller = new AbortController();
     let connected: KdpClient | undefined;
-    void connect(optionsRef.current).then((result) => {
-      if (result.status === 'connected') connected = result.client;
-      // StrictMode runs this effect twice; the first handshake's client is closed, not used.
-      if (cancelled) connected?.close();
-      else setOutcome(result);
-    });
+    connect({ ...(optionsRef.current as ConnectOptions), signal: controller.signal }).then(
+      (result) => {
+        if (result.status === 'connected') connected = result.client;
+        // A handshake that settled just before the cleanup ran; StrictMode makes this common.
+        if (controller.signal.aborted) connected?.close();
+        else setOutcome(result);
+      },
+      (error: unknown) => {
+        // Thrown from the updater, so the nearest error boundary sees it.
+        if (!controller.signal.aborted) {
+          setOutcome(() => {
+            throw error;
+          });
+        }
+      },
+    );
     return () => {
-      cancelled = true;
+      controller.abort();
       connected?.close();
       setOutcome(undefined);
     };
   }, [injected]);
 
-  const client = injected ?? (outcome?.status === 'connected' ? outcome.client : undefined);
-  const subscribe = useMemo(() => subscribeTo(client), [client]);
+  const handshake = outcome?.status === 'connected' ? outcome : undefined;
+  const client = injected ?? handshake?.client;
+  const subscribe = useCallback(
+    (onChange: () => void) => {
+      if (!client) return () => {};
+      const offs = [client.on('theme', onChange), client.on('disconnected', onChange)];
+      return () => offs.forEach((off) => off());
+    },
+    [client],
+  );
   const getContext = () => client?.context;
   const getStatus = () => client?.status;
   const context = useSyncExternalStore(subscribe, getContext, getContext);
   const status = useSyncExternalStore(subscribe, getStatus, getStatus);
 
-  const value = useMemo<KdpConnection>(
-    () => ({
-      state: injected ? 'connected' : (outcome?.status ?? 'connecting'),
-      client,
-      context,
-      outcome: injected ? undefined : outcome,
-      disconnected: status === 'disconnected',
-    }),
-    [injected, outcome, client, context, status],
-  );
+  const value = useMemo<KdpConnection>(() => {
+    if (client && context) {
+      return {
+        state: status === 'disconnected' ? 'disconnected' : 'connected',
+        client,
+        context,
+        outcome: injected ? undefined : handshake,
+      };
+    }
+    // TypeScript cannot pair `state` with the matching `outcome` member on its own.
+    if (outcome && !handshake) return { state: outcome.status, outcome } as KdpConnection;
+    return { state: 'connecting' };
+  }, [client, context, status, outcome, injected, handshake]);
 
   return <KdpContext value={value}>{children}</KdpContext>;
 }

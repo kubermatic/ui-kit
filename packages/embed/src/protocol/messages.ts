@@ -118,15 +118,21 @@ export interface AnnounceMessage {
   instanceId: string;
 }
 
+/*
+ * Accept and refuse echo the announcement's `instanceId`: every pending `connect()` in a window
+ * hears every reply, and must take only the one meant for it.
+ */
 export interface AcceptMessage {
   type: typeof ACCEPT;
   protocolVersion: string;
+  instanceId: string;
   context: EmbedContext;
 }
 
 export interface RefuseMessage {
   type: typeof REFUSE;
   protocolVersion: string;
+  instanceId: string;
   reason: 'version-mismatch' | (string & {});
 }
 
@@ -169,6 +175,10 @@ function hasType(value: unknown, type: string): value is Fields {
   return isRecord(value) && value.type === type;
 }
 
+function hasInstanceId(value: Fields): boolean {
+  return isString(value.instanceId) && value.instanceId !== '';
+}
+
 export function isTheme(value: unknown): value is Theme {
   return value === 'light' || value === 'dark';
 }
@@ -207,16 +217,16 @@ export function isEmbedContext(value: unknown): value is EmbedContext {
 }
 
 export function isAnnounceMessage(value: unknown): value is AnnounceMessage {
-  return (
-    hasType(value, ANNOUNCE) &&
-    isString(value.protocolVersion) &&
-    isString(value.instanceId) &&
-    value.instanceId !== ''
-  );
+  return hasType(value, ANNOUNCE) && isString(value.protocolVersion) && hasInstanceId(value);
 }
 
 export function isAcceptMessage(value: unknown): value is AcceptMessage {
-  return hasType(value, ACCEPT) && isString(value.protocolVersion) && isEmbedContext(value.context);
+  return (
+    hasType(value, ACCEPT) &&
+    isString(value.protocolVersion) &&
+    hasInstanceId(value) &&
+    isEmbedContext(value.context)
+  );
 }
 
 /** Any non-empty reason is accepted, so that a reason added by a later host still ends the wait. */
@@ -224,6 +234,7 @@ export function isRefuseMessage(value: unknown): value is RefuseMessage {
   return (
     hasType(value, REFUSE) &&
     isString(value.protocolVersion) &&
+    hasInstanceId(value) &&
     isString(value.reason) &&
     value.reason !== ''
   );

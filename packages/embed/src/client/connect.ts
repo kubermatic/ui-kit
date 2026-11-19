@@ -16,6 +16,7 @@
 import {
   ANNOUNCE,
   type AnnounceMessage,
+  REFUSE,
   isAcceptMessage,
   isRefuseMessage,
 } from '../protocol/messages.js';
@@ -28,22 +29,29 @@ export const ANNOUNCE_INTERVAL_MS = 250;
 
 export interface ConnectOptions {
   /**
-   * Origins the Dashboard may answer from, e.g. `['https://kdp.example.com']`. When omitted, an
-   * answer from any origin is accepted, as long as it comes from the parent window.
+   * Origins the Dashboard may answer from, e.g. `['https://kdp.example.com']`. `'*'` accepts an
+   * answer from any origin, as long as it comes from the parent window: any site that can frame
+   * the page can then pose as the Dashboard, and the page's `frame-ancestors` CSP is its only
+   * protection.
    */
-  expectedOrigins?: readonly string[];
+  expectedOrigins: readonly string[] | '*';
   /** How long to wait for the Dashboard to answer. Defaults to 10 seconds. */
   handshakeTimeoutMs?: number;
   /** How long each request waits for its response. Defaults to 30 seconds. */
   requestTimeoutMs?: number;
+  /** Stops the handshake. The promise then rejects with the signal's reason. */
+  signal?: AbortSignal;
 }
 
 export type ConnectOutcome =
-  | { status: 'connected'; client: KdpClient; hostProtocolVersion: string }
+  /** `client.hostProtocolVersion` is the Dashboard's protocol version. */
+  | { status: 'connected'; client: KdpClient }
   /** The page is not in a frame, for example because it was opened directly. */
   | { status: 'not-embedded' }
   /** The Dashboard speaks an incompatible protocol version. */
   | { status: 'version-mismatch'; hostProtocolVersion: string }
+  /** The Dashboard refused the page for a reason this version does not know. */
+  | { status: 'refused'; reason: string; hostProtocolVersion: string }
   /**
    * Nothing accepted the page before the deadline. The most common cause is a framing header on
    * the page (`X-Frame-Options`, or a `frame-ancestors` CSP that excludes the Dashboard).
@@ -59,51 +67,100 @@ function randomId(): string {
   ).join('');
 }
 
-/** Connects to the Dashboard that frames this page. Never rejects. */
-export function connect(options: ConnectOptions = {}): Promise<ConnectOutcome> {
-  const env = windowEnvironment();
-  if (!env) return Promise.resolve({ status: 'not-embedded' });
-  return connectWith(env, options);
+// An entry with a path, a trailing slash or a wildcard never equals `event.origin`, so the
+// handshake would time out without a hint.
+function isOrigin(value: unknown): boolean {
+  if (typeof value !== 'string') return false;
+  try {
+    return new URL(value).origin === value;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Connects to the Dashboard that frames this page. Rejects only when `signal` aborts, or with a
+ * `TypeError` when `expectedOrigins` is neither `'*'` nor a non-empty list of origins.
+ */
+export function connect(options: ConnectOptions): Promise<ConnectOutcome> {
+  return connectWith(windowEnvironment(), options);
 }
 
 export function connectWith(
-  env: HandshakeEnvironment,
+  env: HandshakeEnvironment | undefined,
   {
     expectedOrigins,
     handshakeTimeoutMs = DEFAULT_HANDSHAKE_TIMEOUT_MS,
     requestTimeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
-  }: ConnectOptions = {},
+    signal,
+  }: ConnectOptions,
 ): Promise<ConnectOutcome> {
-  if (env.parent === env.self) return Promise.resolve({ status: 'not-embedded' });
+  if (expectedOrigins !== '*') {
+    // Failing loudly beats trusting every origin, or none, by accident.
+    if (!Array.isArray(expectedOrigins) || expectedOrigins.length === 0) {
+      return Promise.reject(
+        new TypeError("connect() needs expectedOrigins: the Dashboard's origins, or '*'"),
+      );
+    }
+    const invalid = expectedOrigins.filter((origin) => !isOrigin(origin));
+    if (invalid.length > 0) {
+      return Promise.reject(
+        new TypeError(
+          `connect() got ${invalid.map((o) => JSON.stringify(o)).join(', ')} in expectedOrigins; ` +
+            "an origin is a scheme, host and port, e.g. 'https://kdp.example.com'",
+        ),
+      );
+    }
+  }
+  // An abort reason is whatever the caller passed to `abort()`, as with `fetch`.
+  // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
+  if (signal?.aborted) return Promise.reject(signal.reason);
+  if (!env || env.parent === env.self) return Promise.resolve({ status: 'not-embedded' });
+  const win = env;
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const announce: AnnounceMessage = {
       type: ANNOUNCE,
       protocolVersion: PROTOCOL_VERSION,
       instanceId: randomId(),
     };
     // The announcement carries only a version and a random ID, so any embedder may see it.
-    const post = () => env.parent.postMessage(announce, '*');
+    const post = () => win.parent.postMessage(announce, '*');
+
+    function stop(): void {
+      win.removeEventListener('message', onMessage);
+      win.clearInterval(interval);
+      win.clearTimeout(deadline);
+      signal?.removeEventListener('abort', onAbort);
+    }
 
     function settle(outcome: ConnectOutcome): void {
-      env.removeEventListener('message', onMessage);
-      env.clearInterval(interval);
-      env.clearTimeout(deadline);
+      stop();
       resolve(outcome);
     }
 
-    function onMessage(event: MessageEvent): void {
-      if (event.source !== env.parent) return;
-      if (expectedOrigins && !expectedOrigins.includes(event.origin)) return;
-      const message: unknown = event.data;
+    function onAbort(): void {
+      stop();
+      // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
+      reject(signal?.reason);
+    }
 
-      if (isRefuseMessage(message)) {
-        // `version-mismatch` is the only refusal this version defines; any other reason, from a
-        // later host, is reported as one too rather than left to time out.
-        settle({ status: 'version-mismatch', hostProtocolVersion: message.protocolVersion });
+    function onMessage(event: MessageEvent): void {
+      if (event.source !== win.parent) return;
+      if (expectedOrigins !== '*' && !expectedOrigins.includes(event.origin)) return;
+      const message: unknown = event.data;
+      if (!isRefuseMessage(message) && !isAcceptMessage(message)) return;
+      if (message.instanceId !== announce.instanceId) return;
+
+      if (message.type === REFUSE) {
+        const hostProtocolVersion = message.protocolVersion;
+        settle(
+          message.reason === 'version-mismatch'
+            ? { status: 'version-mismatch', hostProtocolVersion }
+            : { status: 'refused', reason: message.reason, hostProtocolVersion },
+        );
         return;
       }
-      if (!isAcceptMessage(message)) return;
 
       const port = event.ports[0];
       if (!isCompatible(PROTOCOL_VERSION, message.protocolVersion)) {
@@ -120,12 +177,13 @@ export function connectWith(
         hostProtocolVersion: message.protocolVersion,
         requestTimeoutMs,
       });
-      settle({ status: 'connected', client, hostProtocolVersion: message.protocolVersion });
+      settle({ status: 'connected', client });
     }
 
-    env.addEventListener('message', onMessage);
-    const deadline = env.setTimeout(() => settle({ status: 'timed-out' }), handshakeTimeoutMs);
-    const interval = env.setInterval(post, ANNOUNCE_INTERVAL_MS);
+    win.addEventListener('message', onMessage);
+    signal?.addEventListener('abort', onAbort);
+    const deadline = win.setTimeout(() => settle({ status: 'timed-out' }), handshakeTimeoutMs);
+    const interval = win.setInterval(post, ANNOUNCE_INTERVAL_MS);
     post();
   });
 }
