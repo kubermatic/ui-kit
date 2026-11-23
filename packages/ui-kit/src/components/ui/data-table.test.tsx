@@ -266,6 +266,41 @@ describe('DataTable', () => {
 
       expect(screen.getByRole('menuitemcheckbox', { name: 'Name' })).toBeInTheDocument();
     });
+
+    it('falls back to the column id when the header is not a string', async () => {
+      setup({
+        enableColumnVisibility: true,
+        columns: [
+          { accessorKey: 'name', header: 'Name' },
+          { accessorKey: 'namespace', header: () => <span>NS</span> },
+        ],
+      });
+
+      await openMenu();
+
+      expect(screen.getByRole('menuitemcheckbox', { name: 'namespace' })).toBeInTheDocument();
+    });
+  });
+
+  /*
+   * An ungrouped column next to a group gets a placeholder cell in the group
+   * row, so the header rows stay aligned.
+   */
+  it('renders grouped headers with a placeholder above ungrouped columns', () => {
+    const columns: ColumnDef<Secret, unknown>[] = [
+      {
+        id: 'identity',
+        header: 'Identity',
+        columns: [{ accessorKey: 'name', header: 'Name' }],
+      },
+      { accessorKey: 'namespace', header: 'Namespace' },
+    ];
+    setup({ columns });
+
+    const [groupRow, leafRow] = within(screen.getByRole('table')).getAllByRole('row');
+    const groupCells = within(groupRow!).getAllByRole('columnheader');
+    expect(groupCells.map((cell) => cell.textContent)).toEqual(['Identity', '']);
+    expect(within(leafRow!).getByRole('columnheader', { name: 'Namespace' })).toBeInTheDocument();
   });
   /*
    * Row identity in the DOM. A product's end-to-end suite needs to click "the
