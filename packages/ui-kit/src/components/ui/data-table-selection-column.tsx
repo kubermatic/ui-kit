@@ -15,7 +15,7 @@
  */
 'use client';
 
-import type { ColumnDef } from '@tanstack/react-table';
+import type { ColumnDef, RowData } from './data-table-types.js';
 
 import { Checkbox } from './checkbox.js';
 
@@ -43,10 +43,9 @@ export interface SelectionColumnOptions {
  * rows by selection state, which nobody wants, and hiding it strands the
  * selection.
  */
-export function selectionColumn<TData>({ ariaLabel }: SelectionColumnOptions = {}): ColumnDef<
-  TData,
-  unknown
-> {
+export function selectionColumn<TData extends RowData>({
+  ariaLabel,
+}: SelectionColumnOptions = {}): ColumnDef<TData, unknown> {
   return {
     id: SELECTION_COLUMN_ID,
     enableSorting: false,

@@ -19,7 +19,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { DataTable } from './data-table';
 import { selectionColumn } from './data-table-selection-column';
-import type { ColumnDef } from '@tanstack/react-table';
+import type { ColumnDef } from './data-table-types';
 
 interface Secret {
   name: string;
@@ -32,10 +32,10 @@ const DATA: Secret[] = [
   { name: 'tls-cert', namespace: 'ingress' },
 ];
 
-const COLUMNS = [
+const COLUMNS: ColumnDef<Secret, unknown>[] = [
   { accessorKey: 'name', header: 'Name' },
   { accessorKey: 'namespace', header: 'Namespace' },
-] as ColumnDef<Secret, never>[];
+];
 
 const setup = (props: Partial<Parameters<typeof DataTable<Secret>>[0]> = {}) =>
   render(<DataTable data={DATA} columns={COLUMNS} caption="Secrets" {...props} />);
@@ -266,6 +266,41 @@ describe('DataTable', () => {
 
       expect(screen.getByRole('menuitemcheckbox', { name: 'Name' })).toBeInTheDocument();
     });
+
+    it('falls back to the column id when the header is not a string', async () => {
+      setup({
+        enableColumnVisibility: true,
+        columns: [
+          { accessorKey: 'name', header: 'Name' },
+          { accessorKey: 'namespace', header: () => <span>NS</span> },
+        ],
+      });
+
+      await openMenu();
+
+      expect(screen.getByRole('menuitemcheckbox', { name: 'namespace' })).toBeInTheDocument();
+    });
+  });
+
+  /*
+   * An ungrouped column next to a group gets a placeholder cell in the group
+   * row, so the header rows stay aligned.
+   */
+  it('renders grouped headers with a placeholder above ungrouped columns', () => {
+    const columns: ColumnDef<Secret, unknown>[] = [
+      {
+        id: 'identity',
+        header: 'Identity',
+        columns: [{ accessorKey: 'name', header: 'Name' }],
+      },
+      { accessorKey: 'namespace', header: 'Namespace' },
+    ];
+    setup({ columns });
+
+    const [groupRow, leafRow] = within(screen.getByRole('table')).getAllByRole('row');
+    const groupCells = within(groupRow!).getAllByRole('columnheader');
+    expect(groupCells.map((cell) => cell.textContent)).toEqual(['Identity', '']);
+    expect(within(leafRow!).getByRole('columnheader', { name: 'Namespace' })).toBeInTheDocument();
   });
   /*
    * Row identity in the DOM. A product's end-to-end suite needs to click "the
@@ -286,5 +321,214 @@ describe('DataTable', () => {
 
       expect(document.querySelector('[data-row-id="0"]')).toHaveTextContent('db-credentials');
     });
+  });
+});
+
+/*
+ * Characterization of behaviour that comes from TanStack Table rather than from
+ * this component — sort functions, the global filter, page-index resets. These
+ * pin what consumers see today so that a TanStack upgrade has to keep it, and
+ * they must pass unchanged across one. They assert on the DOM only.
+ */
+describe('DataTable behaviour pinned across TanStack upgrades', () => {
+  interface Workload {
+    name: string;
+    replicas: number;
+    label: string;
+  }
+
+  const WORKLOADS: Workload[] = [
+    { name: 'web', replicas: 3, label: 'bravo' },
+    { name: 'api', replicas: 12, label: 'Charlie' },
+    { name: 'worker', replicas: 1, label: 'alpha' },
+  ];
+
+  const workloadColumns: ColumnDef<Workload, unknown>[] = [
+    { accessorKey: 'name', header: 'Name' },
+    { accessorKey: 'replicas', header: 'Replicas' },
+    { accessorKey: 'label', header: 'Label' },
+  ];
+
+  const renderWorkloads = (props: Partial<Parameters<typeof DataTable<Workload>>[0]> = {}) =>
+    render(
+      <DataTable
+        data={WORKLOADS}
+        columns={workloadColumns}
+        getRowId={(row) => row.name}
+        {...props}
+      />,
+    );
+
+  const rowOrder = () =>
+    Array.from(document.querySelectorAll('tbody tr[data-row-id]')).map((row) =>
+      row.getAttribute('data-row-id'),
+    );
+
+  const clickHeader = (name: string) =>
+    userEvent.click(within(screen.getByRole('columnheader', { name })).getByRole('button'));
+
+  /*
+   * The header button always asks for an explicit direction, so a column never
+   * cycles back to unsorted, and a number column starts ascending like a
+   * string one does.
+   */
+  describe.each([
+    {
+      column: 'Name',
+      ascending: ['api', 'web', 'worker'],
+      descending: ['worker', 'web', 'api'],
+    },
+    {
+      column: 'Replicas',
+      ascending: ['worker', 'web', 'api'],
+      descending: ['api', 'web', 'worker'],
+    },
+    /*
+     * Changed on purpose in the v9 migration. v8 sampled rows from the
+     * eleventh onward to pick the sort function, so a table of ten rows or
+     * fewer compared raw values and `Charlie` sorted before `alpha`. v9
+     * samples the first rows, so text now ignores case at every size.
+     */
+    {
+      column: 'Label',
+      ascending: ['worker', 'web', 'api'],
+      descending: ['api', 'web', 'worker'],
+    },
+  ])('sorting the $column column', ({ column, ascending, descending }) => {
+    it('cycles ascending, descending, ascending', async () => {
+      renderWorkloads();
+      const header = () => screen.getByRole('columnheader', { name: column });
+
+      expect(rowOrder()).toEqual(['web', 'api', 'worker']);
+      expect(header()).toHaveAttribute('aria-sort', 'none');
+
+      await clickHeader(column);
+      expect(rowOrder()).toEqual(ascending);
+      expect(header()).toHaveAttribute('aria-sort', 'ascending');
+
+      await clickHeader(column);
+      expect(rowOrder()).toEqual(descending);
+      expect(header()).toHaveAttribute('aria-sort', 'descending');
+
+      await clickHeader(column);
+      expect(rowOrder()).toEqual(ascending);
+      expect(header()).toHaveAttribute('aria-sort', 'ascending');
+    });
+  });
+
+  it('sorts a mixed-case column case-insensitively past ten rows', async () => {
+    const labels = ['delta', 'Echo', 'alpha', 'Foxtrot', 'charlie', 'Bravo'];
+    const data = Array.from({ length: 12 }, (_, index) => ({
+      name: `w${index}`,
+      replicas: index,
+      label: `${labels[index % labels.length]!}${index < labels.length ? '' : '-two'}`,
+    }));
+    render(<DataTable data={data} columns={workloadColumns} getRowId={(row) => row.name} />);
+
+    await clickHeader('Label');
+    expect(
+      Array.from(document.querySelectorAll('tbody tr td:nth-child(3)')).map(
+        (cell) => cell.textContent,
+      ),
+    ).toEqual([
+      'alpha',
+      'alpha-two',
+      'Bravo',
+      'Bravo-two',
+      'charlie',
+      'charlie-two',
+      'delta',
+      'delta-two',
+      'Echo',
+      'Echo-two',
+      'Foxtrot',
+      'Foxtrot-two',
+    ]);
+  });
+
+  describe('search', () => {
+    const search = (text: string) =>
+      userEvent.type(screen.getByRole('textbox', { name: 'Search…' }), text);
+
+    it('matches a substring of a string cell, ignoring case', async () => {
+      renderWorkloads();
+      await search('CHAR');
+      expect(rowOrder()).toEqual(['api']);
+    });
+
+    it('matches a substring of a number cell', async () => {
+      renderWorkloads();
+      await search('2');
+      expect(rowOrder()).toEqual(['api']);
+    });
+
+    it('reports the filtered total in aria-rowcount', async () => {
+      renderWorkloads({ pageSize: 1 });
+      expect(screen.getByRole('table')).toHaveAttribute('aria-rowcount', '3');
+
+      await search('w');
+      expect(screen.getByRole('table')).toHaveAttribute('aria-rowcount', '2');
+    });
+  });
+
+  it('returns to the first page when data changes', async () => {
+    const { rerender } = renderWorkloads({ pageSize: 2 });
+    await userEvent.click(screen.getByRole('button', { name: 'Next page' }));
+    expect(screen.getByText('Page 2 of 2')).toBeInTheDocument();
+
+    rerender(
+      <DataTable
+        data={[...WORKLOADS, { name: 'cron', replicas: 0, label: 'delta' }]}
+        columns={workloadColumns}
+        getRowId={(row) => row.name}
+        pageSize={2}
+      />,
+    );
+
+    // The reset lands a tick after the render, hence `findBy`.
+    expect(await screen.findByText('Page 1 of 2')).toBeInTheDocument();
+    expect(rowOrder()).toEqual(['web', 'api']);
+  });
+
+  it('keeps a selection on its record when getRowId is given and the data reorders', async () => {
+    const columns = [
+      selectionColumn<Workload>({ ariaLabel: (row) => `Select ${(row as Workload).name}` }),
+      ...workloadColumns,
+    ];
+    const { rerender } = renderWorkloads({ columns, enableRowSelection: true });
+
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Select worker' }));
+    rerender(
+      <DataTable
+        data={[...WORKLOADS].reverse()}
+        columns={columns}
+        enableRowSelection
+        getRowId={(row) => row.name}
+      />,
+    );
+
+    expect(rowOrder()).toEqual(['worker', 'api', 'web']);
+    expect(document.querySelector('[data-row-id="worker"]')).toHaveAttribute(
+      'data-state',
+      'selected',
+    );
+    expect(screen.getByRole('checkbox', { name: 'Select worker' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Select web' })).not.toBeChecked();
+    expect(screen.getByText('1 of 3 selected')).toBeInTheDocument();
+  });
+
+  it('sets an inline width only on a column given a size', () => {
+    render(
+      <DataTable
+        data={WORKLOADS}
+        columns={[
+          { accessorKey: 'name', header: 'Name', size: 120 },
+          { accessorKey: 'label', header: 'Label' },
+        ]}
+      />,
+    );
+
+    expect(screen.getByRole('columnheader', { name: 'Name' })).toHaveStyle({ width: '120px' });
+    expect(screen.getByRole('columnheader', { name: 'Label' }).style.width).toBe('');
   });
 });

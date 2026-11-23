@@ -24,7 +24,7 @@ import { EmptyState } from './empty-state';
 import { Menu, MenuContent, MenuItem, MenuTrigger } from './menu';
 import { FilterSelect } from './select';
 import { StatusBadge, type StatusTone } from './status-badge';
-import type { ColumnDef } from '@tanstack/react-table';
+import type { ColumnDef } from './data-table-types';
 
 interface ExternalSecret {
   name: string;
@@ -79,7 +79,7 @@ const DATA: ExternalSecret[] = [
   },
 ];
 
-const COLUMNS = [
+const COLUMNS: ColumnDef<ExternalSecret, unknown>[] = [
   { accessorKey: 'name', header: 'Name' },
   { accessorKey: 'namespace', header: 'Namespace' },
   { accessorKey: 'store', header: 'Secret store' },
@@ -114,7 +114,7 @@ const COLUMNS = [
       </Menu>
     ),
   },
-] as ColumnDef<ExternalSecret, never>[];
+];
 
 const meta = {
   title: 'Data/DataTable',
@@ -213,25 +213,23 @@ export const Navigable: Story = {
       <DataTable
         data={DATA}
         caption="External secrets"
-        columns={
-          [
-            {
-              accessorKey: 'name',
-              header: 'Name',
-              cell: ({ row }) => (
-                <a
-                  href={`#/external-secrets/${row.original.name}`}
-                  /* The row navigates to the same place; without this, both fire. */
-                  onClick={(event) => event.stopPropagation()}
-                  className="rounded-sm font-medium underline-offset-2 group-hover/row:underline hover:underline"
-                >
-                  {row.original.name}
-                </a>
-              ),
-            },
-            ...COLUMNS.slice(1),
-          ] as ColumnDef<ExternalSecret, never>[]
-        }
+        columns={[
+          {
+            accessorKey: 'name',
+            header: 'Name',
+            cell: ({ row }) => (
+              <a
+                href={`#/external-secrets/${row.original.name}`}
+                /* The row navigates to the same place; without this, both fire. */
+                onClick={(event) => event.stopPropagation()}
+                className="rounded-sm font-medium underline-offset-2 group-hover/row:underline hover:underline"
+              >
+                {row.original.name}
+              </a>
+            ),
+          },
+          ...COLUMNS.slice(1),
+        ]}
         onRowClick={() => {}}
       />
     </div>

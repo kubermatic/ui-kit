@@ -15,15 +15,15 @@
  */
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import type { ColumnDef } from '@tanstack/react-table';
 
 import { ListPage } from './list-page';
+import type { ColumnDef } from './data-table-types';
 
 interface Secret {
   name: string;
 }
 
-const COLUMNS = [{ accessorKey: 'name', header: 'Name' }] as ColumnDef<Secret, never>[];
+const COLUMNS: ColumnDef<Secret, unknown>[] = [{ accessorKey: 'name', header: 'Name' }];
 
 describe('ListPage', () => {
   /*

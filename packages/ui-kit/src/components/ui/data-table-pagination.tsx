@@ -15,15 +15,15 @@
  */
 'use client';
 
-import type { Table } from '@tanstack/react-table';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 
 import { cn } from '../../lib/utils.js';
 import { Button } from './button.js';
+import type { RowData, TableInstance } from './data-table-types.js';
 import { FilterSelect } from './select.js';
 
-export interface DataTablePaginationProps<TData> {
-  table: Table<TData>;
+export interface DataTablePaginationProps<TData extends RowData> {
+  table: TableInstance<TData>;
   /** Choices for rows-per-page. Pass `[]` to hide the selector. */
   pageSizeOptions?: readonly number[];
   /** Shows "n of m selected" when row selection is on. */
@@ -41,15 +41,15 @@ export interface DataTablePaginationProps<TData> {
  * The first/last buttons are hidden below `sm` rather than shrunk, because
  * four 24px targets in a row on a phone is how you paginate by accident.
  */
-export function DataTablePagination<TData>({
+export function DataTablePagination<TData extends RowData>({
   table,
   pageSizeOptions = [10, 25, 50, 100],
   showSelectionCount = false,
   className,
 }: DataTablePaginationProps<TData>) {
-  const { pageIndex, pageSize } = table.getState().pagination;
+  const { pageIndex, pageSize } = table.state.pagination;
   const pageCount = table.getPageCount();
-  const selectedCount = Object.keys(table.getState().rowSelection).length;
+  const selectedCount = Object.keys(table.state.rowSelection).length;
 
   return (
     <div

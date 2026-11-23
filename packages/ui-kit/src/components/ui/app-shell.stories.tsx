@@ -46,7 +46,7 @@ import {
 import { StatusBadge, type StatusTone } from './status-badge';
 import { ThemeToggle } from './theme-toggle';
 import { UserMenu } from './user-menu';
-import type { ColumnDef } from '@tanstack/react-table';
+import type { ColumnDef } from './data-table-types';
 
 interface Secret {
   name: string;
@@ -61,7 +61,7 @@ const SECRETS: Secret[] = [
   { name: 'tls-cert', namespace: 'ingress', status: 'warning', statusLabel: 'Degraded' },
 ];
 
-const COLUMNS = [
+const COLUMNS: ColumnDef<Secret, unknown>[] = [
   { accessorKey: 'name', header: 'Name' },
   { accessorKey: 'namespace', header: 'Namespace' },
   {
@@ -73,7 +73,7 @@ const COLUMNS = [
       </StatusBadge>
     ),
   },
-] as ColumnDef<Secret, never>[];
+];
 
 const meta = {
   title: 'App Frame/AppShell',

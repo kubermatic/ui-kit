@@ -15,20 +15,20 @@
  */
 'use client';
 
-import type { Column } from '@tanstack/react-table';
+import type { Column, RowData } from './data-table-types.js';
 import { ArrowDown, ArrowDownUp, ArrowUp } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import { cn } from '../../lib/utils.js';
 
-export interface DataTableColumnHeaderProps<TData, TValue> {
+export interface DataTableColumnHeaderProps<TData extends RowData, TValue> {
   column: Column<TData, TValue>;
   children: ReactNode;
   className?: string;
 }
 
 /** The `aria-sort` value for a column, or `undefined` when it cannot sort. */
-export function ariaSort<TData, TValue>(
+export function ariaSort<TData extends RowData, TValue>(
   column: Column<TData, TValue>,
 ): 'ascending' | 'descending' | 'none' | undefined {
   if (!column.getCanSort()) return undefined;
@@ -51,7 +51,7 @@ export function ariaSort<TData, TValue>(
  * never claims a sort that is not applied — which is what one product's does
  * correctly and what a surprising number of tables get backwards.
  */
-export function DataTableColumnHeader<TData, TValue>({
+export function DataTableColumnHeader<TData extends RowData, TValue>({
   column,
   children,
   className,

@@ -272,14 +272,18 @@ export {
 } from './components/ui/data-table-selection-column.js';
 
 /*
- * The TanStack Table surface a consumer needs to declare columns.
+ * The table types and helpers a consumer needs to declare columns.
  *
- * Re-exported because `@tanstack/react-table` is a *direct* dependency of this
- * package rather than a peer (ADR 0002, category B: no cross-boundary identity
- * requirement — a table instance is created per call). Products get it
- * transitively and must never install their own copy, and "must never" is only
- * enforceable if they never need to. So the types and helpers required to write
- * a `ColumnDef` come from here.
+ * `@tanstack/react-table` is a *direct* dependency of this package rather than
+ * a peer (ADR 0002, category B: no cross-boundary identity requirement — a
+ * table instance is created per call). Products get it transitively and must
+ * never install their own copy, and "must never" is only enforceable if they
+ * never need to. So everything required to write a `ColumnDef` comes from here.
+ *
+ * These are kit-owned aliases, not TanStack's own exports: they bind TanStack's
+ * types to the kit's internal feature set and keep v8-shaped generics
+ * (`ColumnDef<TData, TValue>`). The alias module is the only seam a TanStack
+ * major has to touch; consumer column code does not change with it.
  */
 export {
   createColumnHelper,
@@ -291,9 +295,9 @@ export {
   type Row,
   type RowSelectionState,
   type SortingState,
-  type Table as TableInstance,
+  type TableInstance,
   type VisibilityState,
-} from '@tanstack/react-table';
+} from './components/ui/data-table-types.js';
 
 /* ------------------------------------------------------------- app frame */
 

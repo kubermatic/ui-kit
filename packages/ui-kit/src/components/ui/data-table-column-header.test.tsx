@@ -16,16 +16,16 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import type { Column } from '@tanstack/react-table';
 
 import { DataTableColumnHeader, ariaSort } from './data-table-column-header';
+import type { Column, RowData } from './data-table-types';
 
 /** A column stub with only the bits `ariaSort` reads. */
 const column = (canSort: boolean, sorted: false | 'asc' | 'desc') =>
   ({
     getCanSort: () => canSort,
     getIsSorted: () => sorted,
-  }) as unknown as Column<unknown, unknown>;
+  }) as unknown as Column<RowData, unknown>;
 
 describe('ariaSort', () => {
   /*
@@ -62,7 +62,7 @@ describe('DataTableColumnHeader', () => {
       getCanSort: () => true,
       getIsSorted: () => false as const,
       toggleSorting,
-    } as unknown as Column<unknown, unknown>;
+    } as unknown as Column<RowData, unknown>;
 
     render(<DataTableColumnHeader column={sortable}>Name</DataTableColumnHeader>);
 

@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
-import type { ColumnDef } from '@tanstack/react-table';
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { DataTable } from './data-table';
+import type { ColumnDef } from './data-table-types';
 
 interface Event {
   message: string;
@@ -26,7 +26,7 @@ interface Event {
 const DATA: Event[] = Array.from({ length: 500 }, (_, index) => ({
   message: `event-${index}`,
 }));
-const COLUMNS = [{ accessorKey: 'message', header: 'Message' }] as ColumnDef<Event, never>[];
+const COLUMNS: ColumnDef<Event, unknown>[] = [{ accessorKey: 'message', header: 'Message' }];
 
 describe('DataTable, virtualized', () => {
   /*
@@ -64,5 +64,34 @@ describe('DataTable, virtualized', () => {
   it('shows the empty state with nothing to virtualize', () => {
     render(<DataTable data={[]} columns={COLUMNS} virtualize emptyMessage="No events." />);
     expect(screen.getByText('No events.')).toBeInTheDocument();
+  });
+
+  describe('scrolled', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    /*
+     * jsdom has no layout, so the scroll container reports a height of zero and
+     * the virtualizer renders nothing. Give it a viewport ten rows tall.
+     */
+    const renderScrolledTo = (scrollTop: number) => {
+      vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(410);
+      const { container } = render(<DataTable data={DATA} columns={COLUMNS} virtualize />);
+      const scroller = container.querySelector<HTMLElement>('.overflow-auto')!;
+      act(() => {
+        scroller.scrollTop = scrollTop;
+        fireEvent.scroll(scroller);
+      });
+    };
+
+    it('replaces the rows above the window with a spacer', () => {
+      renderScrolledTo(41 * 200);
+
+      expect(screen.queryByText('event-0')).not.toBeInTheDocument();
+      expect(screen.getByText('event-200')).toBeInTheDocument();
+      const spacers = document.querySelectorAll('tbody tr[aria-hidden="true"]');
+      expect(spacers).toHaveLength(2);
+    });
   });
 });

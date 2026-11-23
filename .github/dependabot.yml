@@ -82,6 +82,8 @@ updates:
       published-runtime:
         patterns:
           - '@base-ui/react'
+          - '@tanstack/react-table'
+          - '@tanstack/react-virtual'
           - class-variance-authority
           - clsx
           - tailwind-merge
