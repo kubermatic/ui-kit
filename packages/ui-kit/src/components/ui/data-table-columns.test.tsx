@@ -15,11 +15,11 @@
  */
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import type { ColumnDef } from '@tanstack/react-table';
 
 import { DataTable } from './data-table';
 import { DataTableColumnHeader } from './data-table-column-header';
 import { StatusBadge } from './status-badge';
+import type { ColumnDef } from './data-table-types';
 
 interface Secret {
   name: string;
@@ -39,14 +39,14 @@ describe('DataTable column definitions', () => {
    * header is left alone, so a column can opt out or decorate it.
    */
   it('leaves a rendered header alone but still sorts it', () => {
-    const columns = [
+    const columns: ColumnDef<Secret, unknown>[] = [
       {
         accessorKey: 'name',
         header: ({ column }) => (
           <DataTableColumnHeader column={column}>Resource name</DataTableColumnHeader>
         ),
       },
-    ] as ColumnDef<Secret, never>[];
+    ];
 
     render(<DataTable data={DATA} columns={columns} />);
 
@@ -55,10 +55,10 @@ describe('DataTable column definitions', () => {
   });
 
   it('omits aria-sort from a column that cannot sort', () => {
-    const columns = [
+    const columns: ColumnDef<Secret, unknown>[] = [
       { accessorKey: 'name', header: 'Name' },
       { id: 'actions', header: 'Actions', enableSorting: false, cell: () => <span>…</span> },
-    ] as ColumnDef<Secret, never>[];
+    ];
 
     render(<DataTable data={DATA} columns={columns} />);
 
@@ -66,17 +66,16 @@ describe('DataTable column definitions', () => {
   });
 
   it('honours an explicit column width', () => {
-    const columns = [{ accessorKey: 'name', header: 'Name', size: 320 }] as ColumnDef<
-      Secret,
-      never
-    >[];
+    const columns: ColumnDef<Secret, unknown>[] = [
+      { accessorKey: 'name', header: 'Name', size: 320 },
+    ];
 
     render(<DataTable data={DATA} columns={columns} />);
     expect(screen.getByRole('columnheader', { name: 'Name' })).toHaveStyle({ width: '320px' });
   });
 
   it('renders a cell component', () => {
-    const columns = [
+    const columns: ColumnDef<Secret, unknown>[] = [
       {
         accessorKey: 'status',
         header: 'Status',
@@ -84,7 +83,7 @@ describe('DataTable column definitions', () => {
           <StatusBadge tone={row.original.status}>{row.original.status}</StatusBadge>
         ),
       },
-    ] as ColumnDef<Secret, never>[];
+    ];
 
     render(<DataTable data={DATA} columns={columns} />);
     expect(screen.getByText('success')).toBeInTheDocument();
@@ -92,7 +91,7 @@ describe('DataTable column definitions', () => {
 });
 
 describe('DataTable toolbar', () => {
-  const columns = [{ accessorKey: 'name', header: 'Name' }] as ColumnDef<Secret, never>[];
+  const columns: ColumnDef<Secret, unknown>[] = [{ accessorKey: 'name', header: 'Name' }];
 
   it('renders no toolbar at all when nothing goes in it', () => {
     const { container } = render(<DataTable data={DATA} columns={columns} enableSearch={false} />);

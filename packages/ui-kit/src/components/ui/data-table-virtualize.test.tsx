@@ -15,9 +15,9 @@
  */
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import type { ColumnDef } from '@tanstack/react-table';
 
 import { DataTable } from './data-table';
+import type { ColumnDef } from './data-table-types';
 
 interface Event {
   message: string;
@@ -26,7 +26,7 @@ interface Event {
 const DATA: Event[] = Array.from({ length: 500 }, (_, index) => ({
   message: `event-${index}`,
 }));
-const COLUMNS = [{ accessorKey: 'message', header: 'Message' }] as ColumnDef<Event, never>[];
+const COLUMNS: ColumnDef<Event, unknown>[] = [{ accessorKey: 'message', header: 'Message' }];
 
 describe('DataTable, virtualized', () => {
   /*

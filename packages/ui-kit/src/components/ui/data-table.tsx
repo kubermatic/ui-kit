@@ -15,27 +15,23 @@
  */
 'use client';
 
-import {
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-  type ColumnDef,
-  type RowSelectionState,
-  type SortingState,
-  type Table as TableInstance,
-  type VisibilityState,
-} from '@tanstack/react-table';
+import { useTable } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Columns3, Search } from 'lucide-react';
-import { useMemo, useRef, useState, type ReactNode } from 'react';
+import { useRef, type ReactNode } from 'react';
 
 import { cn } from '../../lib/utils.js';
 import { Button } from './button.js';
 import { DataTableColumnHeader, ariaSort } from './data-table-column-header.js';
+import { dataTableFeatures } from './data-table-features.js';
 import { DataTablePagination } from './data-table-pagination.js';
+import {
+  flexRender,
+  type ColumnDef,
+  type RowData,
+  type SortingState,
+  type TableInstance,
+} from './data-table-types.js';
 import { EmptyState } from './empty-state.js';
 import { ErrorState } from './error-state.js';
 import { Input } from './input.js';
@@ -43,11 +39,11 @@ import { MenuCheckboxItem, Menu, MenuContent, MenuTrigger } from './menu.js';
 import { Skeleton } from './skeleton.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './table.js';
 
-export interface DataTableProps<TData> {
+export interface DataTableProps<TData extends RowData> {
   data: readonly TData[];
   /*
    * `any` for the cell-value parameter, deliberately, and it is the only one
-   * in the package.
+   * in the public props.
    *
    * A real column list is heterogeneous — one column accesses a string, the
    * next a number, the next has no accessor at all — so there is no single
@@ -58,8 +54,9 @@ export interface DataTableProps<TData> {
    * did exactly that, and one product grew a wrapper component whose main job
    * was to hide the cast. `any` is TanStack's own documented type for this
    * prop, and the cost is contained: it is one parameter of one prop, and
-   * `TData` — the part that catches real mistakes, like an accessor naming a
-   * field the row does not have — stays strict.
+   * `TData` — the part that catches real mistakes, like an `accessorKey`
+   * naming a field the row does not have, even in a plain object — stays
+   * strict.
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- see above
   columns: ColumnDef<TData, any>[];
@@ -148,7 +145,7 @@ const ESTIMATED_ROW_HEIGHT = 41;
  * state hoisted into the URL and the query, and that is the consumer's
  * concern — pass `pagination={false}` and drive `data` yourself.
  */
-export function DataTable<TData>({
+export function DataTable<TData extends RowData>({
   data,
   columns,
   loading = false,
@@ -172,29 +169,16 @@ export function DataTable<TData>({
   className,
   'data-testid': testId = 'data-table',
 }: DataTableProps<TData>) {
-  const [sorting, setSorting] = useState<SortingState>(initialSorting);
-  const [globalFilter, setGlobalFilter] = useState('');
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
-
   const paginated = pagination && !virtualize;
 
-  const rows = useMemo(() => data as TData[], [data]);
-
-  // eslint-disable-next-line react-hooks/incompatible-library -- useReactTable returns a new instance each render by design
-  const table: TableInstance<TData> = useReactTable({
-    data: rows,
+  const table: TableInstance<TData> = useTable({
+    features: dataTableFeatures,
+    data,
     columns,
-    state: { sorting, globalFilter, columnVisibility, rowSelection },
-    onSortingChange: setSorting,
-    onGlobalFilterChange: setGlobalFilter,
-    onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    ...(paginated ? { getPaginationRowModel: getPaginationRowModel() } : {}),
-    initialState: paginated ? { pagination: { pageIndex: 0, pageSize } } : undefined,
+    initialState: { sorting: initialSorting, pagination: { pageIndex: 0, pageSize } },
+    globalFilterFn: 'includesString',
+    // The paginated row model is always registered; this bypasses it.
+    manualPagination: !paginated,
     enableRowSelection,
     getRowId,
   });
@@ -204,6 +188,7 @@ export function DataTable<TData>({
   const columnCount = leafColumns.length;
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  // eslint-disable-next-line react-hooks/incompatible-library -- useVirtualizer returns a new instance each render by design
   const virtualizer = useVirtualizer({
     count: visibleRows.length,
     getScrollElement: () => scrollRef.current,
@@ -359,8 +344,8 @@ export function DataTable<TData>({
           {enableSearch ? (
             <Input
               size="sm"
-              value={globalFilter}
-              onChange={(event) => setGlobalFilter(event.target.value)}
+              value={(table.state.globalFilter as string | undefined) ?? ''}
+              onChange={(event) => table.setGlobalFilter(event.target.value)}
               placeholder={searchPlaceholder}
               aria-label={searchPlaceholder}
               startAdornment={<Search />}

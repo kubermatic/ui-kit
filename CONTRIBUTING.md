@@ -123,7 +123,8 @@ Two things to know when reviewing one:
 - **A bump to either package's `dependencies` needs a changeset**, because it
   reaches consumers. Dependabot cannot write one, so add it to the PR. The
   `published-runtime` group exists to make these obvious — it covers
-  `@base-ui/react`, `clsx`, `class-variance-authority` and `tailwind-merge`.
+  `@base-ui/react`, `@tanstack/react-table`, `@tanstack/react-virtual`, `clsx`,
+  `class-variance-authority` and `tailwind-merge`.
   Bumps to `devDependencies` need nothing.
 
 - **Dependabot PRs may arrive with an out-of-sync lockfile.** It has a known

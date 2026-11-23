@@ -18,10 +18,11 @@
 import type { ReactNode } from 'react';
 
 import { DataTable, type DataTableProps } from './data-table.js';
+import type { RowData } from './data-table-types.js';
 import { Page, PageHeader, type BackTarget } from './page.js';
 import type { BreadcrumbEntry } from './breadcrumb.js';
 
-export interface ListPageProps<TData> extends DataTableProps<TData> {
+export interface ListPageProps<TData extends RowData> extends DataTableProps<TData> {
   title: ReactNode;
   description?: ReactNode;
   breadcrumbs?: readonly BreadcrumbEntry[];
@@ -59,7 +60,7 @@ export interface ListPageProps<TData> extends DataTableProps<TData> {
  * tables — compose `Page` + `PageHeader` + `DataTable` directly. This template
  * is the common case, not a base class.
  */
-export function ListPage<TData>({
+export function ListPage<TData extends RowData>({
   title,
   description,
   breadcrumbs,

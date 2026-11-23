@@ -14,22 +14,19 @@
  * limitations under the License.
  */
 import { render, screen } from '@testing-library/react';
+import { useTable } from '@tanstack/react-table';
 import { describe, expect, it } from 'vitest';
-import {
-  getCoreRowModel,
-  getPaginationRowModel,
-  useReactTable,
-  type ColumnDef,
-} from '@tanstack/react-table';
 
+import { dataTableFeatures } from './data-table-features';
 import { DataTablePagination } from './data-table-pagination';
+import type { ColumnDef } from './data-table-types';
 
 interface Row {
   name: string;
 }
 
 const DATA: Row[] = Array.from({ length: 8 }, (_, index) => ({ name: `row-${index}` }));
-const COLUMNS = [{ accessorKey: 'name', header: 'Name' }] as ColumnDef<Row, never>[];
+const COLUMNS: ColumnDef<Row, unknown>[] = [{ accessorKey: 'name', header: 'Name' }];
 
 /**
  * Drives the footer against a real table instance, so the props `DataTable`
@@ -44,12 +41,10 @@ function Harness({
   pageSizeOptions?: readonly number[];
   showSelectionCount?: boolean;
 }) {
-  // eslint-disable-next-line react-hooks/incompatible-library -- useReactTable returns a new instance each render by design
-  const table = useReactTable({
+  const table = useTable({
+    features: dataTableFeatures,
     data: DATA,
     columns: COLUMNS,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     initialState: { pagination: { pageIndex: 0, pageSize: 5 } },
   });
 

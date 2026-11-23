@@ -20,7 +20,7 @@ import { Button } from './button';
 import { EmptyState } from './empty-state';
 import { ListPage } from './list-page';
 import { StatusBadge, type StatusTone } from './status-badge';
-import type { ColumnDef } from '@tanstack/react-table';
+import type { ColumnDef } from './data-table-types';
 
 interface Secret {
   name: string;
@@ -54,7 +54,7 @@ const DATA: Secret[] = [
   },
 ];
 
-const COLUMNS = [
+const COLUMNS: ColumnDef<Secret, unknown>[] = [
   { accessorKey: 'name', header: 'Name' },
   { accessorKey: 'namespace', header: 'Namespace' },
   { accessorKey: 'store', header: 'Secret store' },
@@ -67,7 +67,7 @@ const COLUMNS = [
       </StatusBadge>
     ),
   },
-] as ColumnDef<Secret, never>[];
+];
 
 const meta = {
   title: 'Templates/ListPage',

@@ -16,17 +16,17 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
-import type { ColumnDef } from '@tanstack/react-table';
 
 import { DataTable } from './data-table';
 import { selectionColumn } from './data-table-selection-column';
+import type { ColumnDef } from './data-table-types';
 
 interface Row {
   name: string;
 }
 
 const DATA: Row[] = Array.from({ length: 12 }, (_, index) => ({ name: `row-${index}` }));
-const COLUMNS = [{ accessorKey: 'name', header: 'Name' }] as ColumnDef<Row, never>[];
+const COLUMNS: ColumnDef<Row, unknown>[] = [{ accessorKey: 'name', header: 'Name' }];
 
 const setup = (props: Partial<Parameters<typeof DataTable<Row>>[0]> = {}) =>
   render(<DataTable data={DATA} columns={COLUMNS} pageSize={5} {...props} />);
