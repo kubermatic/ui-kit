@@ -20,7 +20,14 @@ import react from '@vitejs/plugin-react';
 import { playwright } from '@vitest/browser-playwright';
 import { defineConfig } from 'vitest/config';
 
-const alias = { '@': resolve(import.meta.dirname, 'packages/ui-kit/src') };
+const embedSrc = resolve(import.meta.dirname, 'packages/embed/src');
+
+// Mirrors the `@kubermatic/embed` paths in tsconfig.json; the workspace symlink points at `dist`.
+const alias = [
+  { find: '@', replacement: resolve(import.meta.dirname, 'packages/ui-kit/src') },
+  { find: /^@kubermatic\/embed$/, replacement: `${embedSrc}/index.ts` },
+  { find: /^@kubermatic\/embed\/([^/]+)$/, replacement: `${embedSrc}/$1/index.ts` },
+];
 
 export default defineConfig({
   test: {
