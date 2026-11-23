@@ -1,6 +1,6 @@
 {
   "name": "@kubermatic/embed",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Client for pages embedded in the Kubermatic Developer Platform Dashboard",
   "license": "Apache-2.0",
   "type": "module",
